@@ -17,8 +17,13 @@ def check_existence(conf, dic):
 
 
 class dataset:
-    def __init__(self, dic):
-        check_existence(conf, dic)
+    def __init__(self, dataset_mixture):
+        """
+        dataset_mixture: dictionary expressing how many examples of each dataset will be used ({<dataset_name>:[<train>, <eval>, <test>]} eg. {"kitti_2015": [10, 20, 10], ...} ) 
+        """
+
+        # check all asked datasets are defined in the conf file
+        check_existence(conf, dataset_mixture)
 
         # import modules, create split_dataset instances and
         # store as attributes
@@ -26,9 +31,9 @@ class dataset:
         self.val = []
         self.test = []
         self.split = np.zeros(3)
-        for i in dic:
-            name = list(i.keys())[0]
-            split = i[name]
+        for key, val in dataset_mixture:
+            name = key
+            split = val
             mod = importlib.import_module('raw_dataset.' + name)
 
             # set instances as attributes
@@ -47,7 +52,6 @@ class dataset:
         self.split = self.split.astype(np.int).tolist()
 
     def load(self, reg, which):
-
         assert which in ['train', 'val', 'test']
 
         # check and find appropriate dict and name of load func
@@ -62,35 +66,22 @@ class dataset:
         name = str(dic['dataset']) + '_split'
         dataset_instance = getattr(self, name)
         
-        # if we are on c0-5 of mug cluster
+        # Patch for on-the-fly fixing of wrong paths
         if platform.node() == 'compute-0-5.local':
-            for split in ['train', 'val', 'test']:
-                dataset = getattr(dataset_instance, split)
-                if len(dataset) > 0 and dataset[0]['imL'][:6] == "/media":
-                    for i, item in enumerate(dataset):
-                        dataset[i]['imL'] = dataset[i]['imL'].replace("/media/givasile/givasile/", "/state/partition1/givasile/") 
-                        dataset[i]['imR'] = dataset[i]['imR'].replace("/media/givasile/givasile/", "/state/partition1/givasile/") 
-                        dataset[i]['dispL'] = dataset[i]['dispL'].replace("/media/givasile/givasile/", "/state/partition1/givasile/")
-                        dataset[i]['dispR'] = dataset[i]['dispR'].replace("/media/givasile/givasile/", "/state/partition1/givasile/") 
-        # if we are on athos
-        elif platform.node() == 'athos':
-            for split in ['train', 'val', 'test']:
-                dataset = getattr(dataset_instance, split)
-                if len(dataset) > 0 and dataset[0]['imL'][:6] == "/media":
-                    for i, item in enumerate(dataset):
-                        dataset[i]['imL'] = dataset[i]['imL'].replace("/media/givasile/givasile/", "/home/givasile/stereo_vision/data/givasile/") 
-                        dataset[i]['imR'] = dataset[i]['imR'].replace("/media/givasile/givasile/", "/home/givasile/stereo_vision/data/givasile/") 
-                        dataset[i]['dispL'] = dataset[i]['dispL'].replace("/media/givasile/givasile/", "/home/givasile/stereo_vision/data/givasile/")
-                        dataset[i]['dispR'] = dataset[i]['dispR'].replace("/media/givasile/givasile/", "/home/givasile/stereo_vision/data/givasile/") 
+            if 'freiburg' in dic['dataset']:
+                pref_new = "/state/partition1/givasile/"
+                pref_old = dic['imR'].split("Freiburg_Synthetic")[0] + "Freiburg_Synthetic/"
+                dic['imL'] = dic['imL'].replace(pref_old, pref_new)
+                dic['imR'] = dic['imR'].replace(pref_old, pref_new)
+                dic['dispL'] = dic['dispL'].replace(pref_old, pref_new)
+                dic['dispR'] = dic['dispR'].replace(pref_old, pref_new)
         else:
-            for split in ['train', 'val', 'test']:
-                dataset = getattr(dataset_instance, split)
-                if len(dataset) > 0 and dataset[0]['imL'][:6] == "/media":
-                    for i, item in enumerate(dataset):
-                        dataset[i]['imL'] = dataset[i]['imL'].replace("/media/givasile/givasile/datasets/stereo_vision/raw/Freiburg_Synthetic/", conf['DATASETS']['freiburg'])
-                        dataset[i]['imR'] = dataset[i]['imR'].replace("/media/givasile/givasile/datasets/stereo_vision/raw/Freiburg_Synthetic/", conf['DATASETS']['freiburg'])
-                        dataset[i]['dispL'] = dataset[i]['dispL'].replace("/media/givasile/givasile/datasets/stereo_vision/raw/Freiburg_Synthetic/", conf['DATASETS']['freiburg'])
-                        dataset[i]['dispR'] = dataset[i]['dispR'].replace("/media/givasile/givasile/datasets/stereo_vision/raw/Freiburg_Synthetic/", conf['DATASETS']['freiburg'])
-                        
-            
+            if 'freiburg' in dic['dataset']:
+                pref_new = conf['DATASETS']['freiburg']
+                pref_old = dic['imR'].split("Freiburg_Synthetic")[0] + "Freiburg_Synthetic/"
+                dic['imL'] = dic['imL'].replace(pref_old, pref_new)
+                dic['imR'] = dic['imR'].replace(pref_old, pref_new)
+                dic['dispL'] = dic['dispL'].replace(pref_old, pref_new)
+                dic['dispR'] = dic['dispR'].replace(pref_old, pref_new)
+
         return dataset_instance.load_registry(dic)
