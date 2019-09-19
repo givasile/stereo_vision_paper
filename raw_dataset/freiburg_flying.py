@@ -63,21 +63,22 @@ def _create_list(which):
                 imm_l = os.listdir(os.path.join(flying_dir, ss, ff,  'left'))
                 imm_l.sort()
                 for im in imm_l:
+                    flying_dir_a = flying_dir.split('/Freiburg_Synthetic/')[1]
+                    flying_dir1_a = flying_dir1.split('/Freiburg_Synthetic/')[1]
                     if is_image_file(os.path.join(flying_dir, ss, ff, 'left', im)):
-                        imL = os.path.join(flying_dir, ss, ff, 'left', im)
-                        imR = os.path.join(flying_dir, ss, ff, 'right', im)
-                        dispL = os.path.join(flying_dir1, ss, ff, 'left',
+                        imL = os.path.join(flying_dir_a, ss, ff, 'left', im)
+                        imR = os.path.join(flying_dir_a, ss, ff, 'right', im)
+                        dispL = os.path.join(flying_dir1_a, ss, ff, 'left',
                                              im.split(".")[0]+'.pfm')
-                        dispR = os.path.join(flying_dir1, ss, ff, 'right',
+                        dispR = os.path.join(flying_dir1_a, ss, ff, 'right',
                                              im.split(".")[0]+'.pfm')
-                        id = os.path.join(ss, ff, 'left', im)
+                        identity = os.path.join('TRAIN', ss, ff, 'left', im)
                         # create dict
-                        dic = {'index': index, 'id': id, 'imL': imL,
+                        dic = {'index': index, 'id': identity, 'imL': imL,
                                'imR': imR, 'dispL': dispL, 'dispR': dispR,
                                'dataset': dataset_name}
                         li.append(dic)
                         index += 1
-        return li
     else:
         li = []
         flying_dir = os.path.join(flying_path, 'TEST')
@@ -98,20 +99,22 @@ def _create_list(which):
                     term2 = is_image_file(os.path.join(flying_dir, ss, ff,
                                                        'right', im))
                     if term1 and term2:
-                        imL = os.path.join(flying_dir, ss, ff, 'left', im)
-                        imR = os.path.join(flying_dir, ss, ff, 'right', im)
-                        dispL = os.path.join(flying_dir1, ss, ff, 'left',
+                        flying_dir_a = flying_dir.split('/Freiburg_Synthetic/')[1]
+                        flying_dir1_a = flying_dir1.split('/Freiburg_Synthetic/')[1]
+                        imL = os.path.join(flying_dir_a, ss, ff, 'left', im)
+                        imR = os.path.join(flying_dir_a, ss, ff, 'right', im)
+                        dispL = os.path.join(flying_dir1_a, ss, ff, 'left',
                                              im.split(".")[0]+'.pfm')
-                        dispR = os.path.join(flying_dir1, ss, ff, 'right',
+                        dispR = os.path.join(flying_dir1_a, ss, ff, 'right',
                                              im.split(".")[0]+'.pfm')
-                        id = os.path.join(ss, ff, 'left', im)
+                        identity = os.path.join('TEST', ss, ff, 'left', im)
                         # create dict
-                        dic = {'index': index, 'id': id, 'imL': imL,
+                        dic = {'index': index, 'id': identity, 'imL': imL,
                                'imR': imR, 'dispL': dispL, 'dispR': dispR,
                                'dataset': dataset_name}
                         li.append(dic)
                         index += 1
-        return li
+    return li
 
 
 class registry(abs.registry):
@@ -120,8 +123,8 @@ class registry(abs.registry):
 
 def _load_registry(dic):
     # load
-    imL_rgb = Image.open(dic['imL']).convert('RGB')
-    imR_rgb = Image.open(dic['imR']).convert('RGB')
+    imL_rgb = Image.open(os.path.join(filepath, dic['imL'])).convert('RGB')
+    imR_rgb = Image.open(os.path.join(filepath, dic['imR'])).convert('RGB')
 
     # rgb -> gray
     imL_g = imL_rgb.convert('LA')
@@ -129,7 +132,7 @@ def _load_registry(dic):
 
     # load ground truth
     if dic['dispL'] is not None:
-        gtL = pfm.readPFM(dic['dispL'])[0]
+        gtL = pfm.readPFM(os.path.join(filepath, dic['dispL']))[0]
         mask1 = gt2mask(gtL)
         maxDL = gtL.max()
     else:
@@ -137,7 +140,7 @@ def _load_registry(dic):
         mask1 = None
         maxDL = None
     if dic['dispR'] is not None:
-        gtR = pfm.readPFM(dic['dispR'])[0]
+        gtR = pfm.readPFM(os.path.join(filepath, dic['dispR']))[0]
         mask2 = gt2mask(gtR)
         maxDR = gtR.max()
     else:
@@ -157,6 +160,5 @@ class split_dataset(abs.split_dataset):
     def _create_list(self, which):
         return _create_list(which)
 
-    # funcs
     def load_registry(self, dic):
         return _load_registry(dic)
