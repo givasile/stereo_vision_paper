@@ -41,8 +41,8 @@ class Registry(ABC):
 
 class SplitDataset(ABC):
 
-    def __init__(self, split: List[int]) -> None:
-        self.split: List[int] = split
+    def __init__(self, split: Union[List[int], None], create_load: str, state_dict: Union[None, Dict]) -> None:
+        assert create_load in ['create', 'load']
 
         # initialise full dataset
         if self._load_dict_with_all_registries() is None:
@@ -51,10 +51,16 @@ class SplitDataset(ABC):
         else:
             self.full_dataset: Dict[str, List[Dict]] = self._load_dict_with_all_registries()
 
-        # initialise split dataset values
-        self.train, self.val, self.test = utils.split_dataset(self.full_dataset['training_set'],
-                                                              self.full_dataset['test_set'],
-                                                              split[0], split[1], split[2])
+        if create_load == 'create':
+            self.split: List[int] = split
+            self.train, self.val, self.test = utils.split_dataset(self.full_dataset['training_set'],
+                                                                  self.full_dataset['test_set'],
+                                                                  split[0], split[1], split[2])
+        else:
+            self.split: List[int] = state_dict['split']
+            self.train: List[Dict] = state_dict['train']
+            self.val: List[Dict] = state_dict['val']
+            self.test: List[Dict] = state_dict['test']
 
         super().__init__()
 

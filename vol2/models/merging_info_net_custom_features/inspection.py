@@ -69,20 +69,23 @@ device = 'cuda'
 # restore dataset
 if get_standart_dataset:
     parent = os.path.join(os.path.dirname(
-        os.path.dirname(parent_path)), 'saved_models', 'common_datasets')
+        os.path.dirname(parent_path)), 'saved_models', 'common_datasets_state_only')
     dataset = os.path.join(parent, which_dataset + '.pickle')
+    print(dataset)
     assert os.path.exists(dataset)
     with open(dataset, 'rb') as fm:
-        dataset = pickle.load(fm)
+        dataset_state_dict = pickle.load(fm)
+    dataset = merged.Dataset(None, 'load', dataset_state_dict)
 
 else:
-    parent = os.path.join(os.path.dirname(
-    os.path.dirname(parent_path)), 'saved_models/vol2', cnn_name)
+    parent = os.path.join(os.path.dirname(os.path.dirname(parent_path)), 'saved_models_athos/vol2', cnn_name)
 
     dataset_path = os.path.join(parent, 'experiment_' + str(experiment_n_load_from)
-                                + '/merged_dataset.pickle')
+                                + '/merged_dataset_state_dict.pickle')
     with open(dataset_path, 'rb') as fm:
-        dataset = pickle.load(fm)
+        dataset_state_dict = pickle.load(fm)
+    dataset = merged.Dataset(None, 'load', dataset_state_dict)
+
 
 # print(dataset)
 # print(dataset.train[0])

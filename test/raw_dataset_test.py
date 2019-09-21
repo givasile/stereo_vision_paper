@@ -35,6 +35,5 @@ class MyTestCase(unittest.TestCase):
         print("Elapsed time: %.4f" % (timeit.default_timer() - a))
 
 
-
 if __name__ == '__main__':
     unittest.main()
