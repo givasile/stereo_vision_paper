@@ -14,7 +14,7 @@ class MyTestCase(unittest.TestCase):
         # create instances
         flying = freiburg_flying.split_dataset([1, 1, 1])
         monkaa = freiburg_monkaa.split_dataset([1, 1, 0])
-        driving = freiburg_driving.split_dataset([1, 1, 0])
+        driving = freiburg_driving.SplitDataset([1, 1, 0])
         kitti2012 = kitti_2012.split_dataset([1, 1, 1])
         kitti2015 = kitti_2015.split_dataset([1, 1, 1])
 

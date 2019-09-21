@@ -43,18 +43,18 @@ class Dataset:
                 mod = importlib.import_module('raw_dataset.' + name)
 
                 # initialise instance of raw dataset
-                split_instance = mod.split_dataset(split)
+                split_dataset = mod.SplitDataset(split)
 
                 # set instance as attribute
-                setattr(self, str(name+'_split'), split_instance)
+                setattr(self, str(name+'_split'), split_dataset)
 
                 # add to sets
-                self.train += getattr(split_instance, 'train')
-                self.val += getattr(split_instance, 'val')
-                self.test += getattr(split_instance, 'test')
+                self.train += split_dataset.train
+                self.val += split_dataset.val
+                self.test += split_dataset.test
 
                 # create split attr
-                dat_split = getattr(split_instance, 'split')
+                dat_split = split_dataset.split
                 self.split += np.array(dat_split)
 
             self.split = self.split.astype(np.int).tolist()
@@ -65,18 +65,18 @@ class Dataset:
                 mod = importlib.import_module('raw_dataset.' + name)
 
                 # initialise instance of raw dataset by loading
-                split_instance = mod.split_dataset(None, 'load', val)
+                split_dataset = mod.SplitDataset(None, 'load', val)
 
                 # set instance as attribute
-                setattr(self, str(name+'_split'), split_instance)
+                setattr(self, str(name+'_split'), split_dataset)
 
                 # add to sets
-                self.train += getattr(split_instance, 'train')
-                self.val += getattr(split_instance, 'val')
-                self.test += getattr(split_instance, 'test')
+                self.train += split_dataset.train
+                self.val += split_dataset.val
+                self.test += split_dataset.test
 
                 # create split attr
-                dat_split = getattr(split_instance, 'split')
+                dat_split = split_dataset.split
                 self.split += np.array(dat_split)
 
             self.split = self.split.astype(np.int).tolist()
@@ -103,7 +103,6 @@ class Dataset:
         example_dict = utils.remove_absolute_part_from_paths(example_dict)
 
         # add prefixes
-        print(example_dict)
         if 'kitti' in example_dict['dataset']:
             for im in ['imL', 'imR', 'gtL', 'gtR']:
                 if example_dict[im] is not None:
@@ -112,6 +111,5 @@ class Dataset:
             for im in ['imL', 'imR', 'dispL', 'dispR']:
                 if example_dict[im] is not None:
                     example_dict[im] = os.path.join(conf['DATASETS'][example_dict['dataset']], example_dict[im])
-        print(example_dict)
 
         return dataset_instance.load_registry(example_dict)

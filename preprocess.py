@@ -26,7 +26,7 @@ def transformations():
 
 
 class dataset(Dataset):
-    def __init__(self, split_dataset_inst, which, form, limit_maxD, ref_img = 'left'):
+    def __init__(self, split_dataset_inst, which, form, limit_maxD, ref_img='left'):
         """
         Input:
         - split_dataset_inst: instance of merged_dataset class

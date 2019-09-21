@@ -37,7 +37,7 @@ def _generate_list_with_all_registries(train_or_test: str) -> List[Dict]:
     return examples_list
 
 
-class split_dataset(abc.SplitDataset):
+class SplitDataset(abc.SplitDataset):
 
     def _load_dict_with_all_registries(self):
         return kitti_utils._load_dict_with_all_registries(dataset_dict_file)
