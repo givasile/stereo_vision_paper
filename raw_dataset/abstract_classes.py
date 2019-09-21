@@ -1,13 +1,21 @@
-from abc import ABC, abstractmethod, abstractproperty
+from abc import ABC, abstractmethod
+import PIL
+from PIL import Image
+from typing import List, Dict, Union
 import raw_dataset.utils as utils
 
 
-class registry(ABC):
+class Registry(ABC):
 
-    def __init__(self, index, id, imL_g, imR_g, imL_rgb, imR_rgb, gtL, gtR,
-                 maskL, maskR, maxDL, maxDR, dataset):
+    def __init__(self, index: int, identity: str,
+                 imL_g: PIL.Image, imR_g: PIL.Image,
+                 imL_rgb: PIL.Image, imR_rgb: PIL.Image,
+                 gtL: PIL.Image, gtR: PIL.Image,
+                 maskL: PIL.Image, maskR: PIL.Image,
+                 maxDL: PIL.Image, maxDR: PIL.Image,
+                 dataset: str) -> None:
         self.index = index
-        self.id = id
+        self.id = identity
         self.imL_g = imL_g
         self.imR_g = imR_g
         self.imL_rgb = imL_rgb
@@ -21,67 +29,60 @@ class registry(ABC):
         self.dataset = dataset
         super().__init__()
 
-    def plot(self, which):
-        assert which in ['imL_g', 'imR_g', 'imL_rgb', 'imR_rgb',
-                         'gtL', 'gtR', 'maskL', 'maskR']
-        if which in ['imL_g', 'imR_g', 'imL_rgb', 'imR_rgb', 'maskL', 'maskR']:
-            x = getattr(self, which)
-            x.show()
-        elif which in ['gtR', 'gtL']:
-            x = getattr(self, which)
-            utils.plot_disp_map(x, which)
+    def plot(self, image: str) -> None:
+        assert image in ['imL_g', 'imR_g', 'imL_rgb', 'imR_rgb', 'gtL', 'gtR', 'maskL', 'maskR']
+        if image in ['imL_g', 'imR_g', 'imL_rgb', 'imR_rgb', 'maskL', 'maskR']:
+            im = getattr(self, image)
+            im.show()
+        elif image in ['gtR', 'gtL']:
+            im = getattr(self, image)
+            utils.plot_disp_map(im, image)
 
 
-class dataset(ABC):
+class SplitDataset(ABC):
 
-    @abstractproperty
-    def train(self):
-        pass
+    def __init__(self, split: List[int]) -> None:
+        self.split: List[int] = split
 
-    @abstractproperty
-    def test(self):
-        pass
+        # initialise full dataset
+        if self._load_dict_with_all_registries() is None:
+            self.full_dataset: Dict[str, List[Dict]] = {'training_set': self._create_list('train'),
+                                                        'test_set': self._create_list('test')}
+        else:
+            self.full_dataset: Dict[str, List[Dict]] = self._load_dict_with_all_registries()
 
-    @abstractproperty
-    def max_disp(self):
-        pass
+        # initialise split dataset values
+        self.train, self.val, self.test = utils.split_dataset(self.full_dataset['training_set'],
+                                                              self.full_dataset['test_set'],
+                                                              split[0], split[1], split[2])
 
-    @abstractproperty
-    def name(self):
-        pass
-
-    @abstractmethod
-    def load(self):
-        pass
-
-
-class split_dataset(ABC):
-
-    @abstractmethod
-    def _create_list(self):
-        pass
-
-    @abstractmethod
-    def load_registry(self):
-        pass
-
-    # constructor
-    def __init__(self, split):
-        self.split = split
-        self.train, self.val, self.test = utils.split(
-            self._create_list('train'), self._create_list('test'),
-            split[0], split[1], split[2])
         super().__init__()
 
-    # methods
-    def load_from_index(self, reg, tr_te):
-        assert tr_te in ['train', 'test']
-        message = 'Error in stereo pair loading. The reg you asked is out of limits!'
-        if tr_te == 'train':
-            assert reg >= 0 and reg <= len(self._create_list('train')), message
-            train = self._create_list('train')
-            return self.load_registry(train[reg])
-        elif tr_te == 'test':
-            assert reg >= 0 and reg <= len(self._create_list('test')), message
-            test = self._create_list('test')
-            return self.load_registry(test[reg])
+    def load_registry_from_index(self, index: int, which_set: str, full_or_split: str) -> Registry:
+        assert full_or_split in ['full', 'split']
+        if full_or_split == 'full':
+            assert which_set in ['train', 'test']
+            examples_list: List[Dict] = self.full_dataset['training_set'] if which_set == 'train' else self.full_dataset['test_set']
+            assert 0 <= index <= len(
+                examples_list), 'Error in stereo pair loading. The index you asked is out of limits!'
+            return self.load_registry(examples_list[index])
+        else:
+            assert which_set in ['train', 'val', 'test']
+            examples_list: List[Dict] = getattr(self, which_set)
+            assert 0 <= index <= len(
+                examples_list), 'Error in stereo pair loading. The index you asked is out of limits!'
+            return self.load_registry(examples_list[index])
+
+    @abstractmethod
+    def load_registry(self, registry_dict: Dict) -> Registry:
+        pass
+
+    @abstractmethod
+    def _create_list(self, which_set: str) -> List[Dict]:
+        pass
+
+    @abstractmethod
+    def _load_dict_with_all_registries(self) -> Union[None, Dict[str, List[Dict]]]:
+        pass
+
+

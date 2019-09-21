@@ -1,52 +1,25 @@
 import os
-import sys
-import importlib
-import configparser
-from PIL import Image
-import numpy as np
+from typing import List, Dict
+import raw_dataset.utils as utils
+import raw_dataset.abstract_classes as abc
+import raw_dataset.freiburg_utils as freiburg_utils
+
+# set dataset name
+dataset_name: str = 'freiburg_flying'
+
+# set dataset directory
+_config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'conf.ini')
+_config_parser = utils.load_configuration_file(_config_path)
+dataset_dir: str = _config_parser['DATASETS'][dataset_name]
+dataset_dict_file: str = _config_parser['DATASET_DICT'][dataset_name]
 
 
-# load conf file from parent dir
-CONF_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'conf.ini')
-conf = configparser.ConfigParser()
-conf.read(CONF_PATH)
-conf = conf._sections
-
-# add parent path of project
-parent = conf['PATHS']['parent_dir']
-ins = sys.path.insert(1, parent)
-ins if parent not in sys.path else 0
-
-# import custom modules
-abs = importlib.import_module('raw_dataset.abstract_classes')
-pfm = importlib.import_module('raw_dataset.pfm')
-
-# parent path of dataset
-dataset_name = 'freiburg_flying'
-PARENT_DIR = conf['DATASETS'][dataset_name]
-filepath = PARENT_DIR
-
-IMG_EXTENSIONS = [
-    '.jpg', '.JPG', '.jpeg', '.JPEG',
-    '.png', '.PNG', '.ppm', '.PPM', '.bmp', '.BMP',
-]
-
-
-def is_image_file(filename):
-    return any(filename.endswith(extension) for extension in IMG_EXTENSIONS)
-
-
-def gt2mask(x):
-    return np.ones_like(x)
-
-
-def _create_list(which):
+def _generate_list_with_all_registries(which: str) -> List[Dict]:
     assert which in ['train', 'test']
     # base path for imL, imR
-    flying_path = os.path.join(filepath, 'flying_frames_cleanpass')
+    flying_path = os.path.join(dataset_dir, 'flying_frames_cleanpass')
     # base path for dispL, dispR
-    flying_disp = os.path.join(filepath, 'flying_disparity/')
+    flying_disp = os.path.join(dataset_dir, 'flying_disparity/')
     # train directory
     if which == 'train':
         li = []
@@ -65,7 +38,7 @@ def _create_list(which):
                 for im in imm_l:
                     flying_dir_a = flying_dir.split('/Freiburg_Synthetic/')[1]
                     flying_dir1_a = flying_dir1.split('/Freiburg_Synthetic/')[1]
-                    if is_image_file(os.path.join(flying_dir, ss, ff, 'left', im)):
+                    if freiburg_utils._is_image_file(os.path.join(flying_dir, ss, ff, 'left', im)):
                         imL = os.path.join(flying_dir_a, ss, ff, 'left', im)
                         imR = os.path.join(flying_dir_a, ss, ff, 'right', im)
                         dispL = os.path.join(flying_dir1_a, ss, ff, 'left',
@@ -94,9 +67,9 @@ def _create_list(which):
                 imm_l = os.listdir(os.path.join(flying_dir, ss, ff,  'left'))
                 imm_l.sort()
                 for im in imm_l:
-                    term1 = is_image_file(os.path.join(flying_dir, ss, ff,
+                    term1 = freiburg_utils._is_image_file(os.path.join(flying_dir, ss, ff,
                                                        'left', im))
-                    term2 = is_image_file(os.path.join(flying_dir, ss, ff,
+                    term2 = freiburg_utils._is_image_file(os.path.join(flying_dir, ss, ff,
                                                        'right', im))
                     if term1 and term2:
                         flying_dir_a = flying_dir.split('/Freiburg_Synthetic/')[1]
@@ -117,48 +90,13 @@ def _create_list(which):
     return li
 
 
-class registry(abs.registry):
-    pass
+class split_dataset(abc.SplitDataset):
 
-
-def _load_registry(dic):
-    # load
-    imL_rgb = Image.open(os.path.join(filepath, dic['imL'])).convert('RGB')
-    imR_rgb = Image.open(os.path.join(filepath, dic['imR'])).convert('RGB')
-
-    # rgb -> gray
-    imL_g = imL_rgb.convert('LA')
-    imR_g = imR_rgb.convert('LA')
-
-    # load ground truth
-    if dic['dispL'] is not None:
-        gtL = pfm.readPFM(os.path.join(filepath, dic['dispL']))[0]
-        mask1 = gt2mask(gtL)
-        maxDL = gtL.max()
-    else:
-        gtL = None
-        mask1 = None
-        maxDL = None
-    if dic['dispR'] is not None:
-        gtR = pfm.readPFM(os.path.join(filepath, dic['dispR']))[0]
-        mask2 = gt2mask(gtR)
-        maxDR = gtR.max()
-    else:
-        gtR = None
-        mask2 = None
-        maxDR = None
-
-    # return registry instance
-    tmp = registry(dic['index'], dic['id'], imL_g, imR_g, imL_rgb,
-                   imR_rgb, gtL, gtR, mask1, mask2, maxDL, maxDR,
-                   dataset='freiburg_flying')
-    return tmp
-
-
-class split_dataset(abs.split_dataset):
+    def _load_dict_with_all_registries(self):
+        return freiburg_utils._load_dict_with_all_registries(dataset_dict_file)
 
     def _create_list(self, which):
-        return _create_list(which)
+        return _generate_list_with_all_registries(which)
 
     def load_registry(self, dic):
-        return _load_registry(dic)
+        return freiburg_utils._load_registry(dataset_dir, dataset_name, dic)

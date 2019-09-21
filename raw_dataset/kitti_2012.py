@@ -1,125 +1,49 @@
 import os
-import sys
-import importlib
-import configparser
+import pickle
+from typing import List, Dict
 from PIL import Image
 import numpy as np
+import raw_dataset.utils as utils
+import raw_dataset.abstract_classes as abc
+import raw_dataset.kitti_utils as kitti_utils
+
+# set dataset name
+dataset_name: str = 'kitti_2012'
+
+# set dataset directory
+_config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'conf.ini')
+_config_parser = utils.load_configuration_file(_config_path)
+dataset_dir: str = _config_parser['DATASETS'][dataset_name]
+dataset_dict_file: str = _config_parser['DATASET_DICT'][dataset_name]
 
 
-# load conf file from parent dir
-CONF_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'conf.ini')
-conf = configparser.ConfigParser()
-conf.read(CONF_PATH)
-conf = conf._sections
+def _generate_list_with_all_registries(train_or_test: str) -> List[Dict]:
+    assert train_or_test in ['train', 'test']
+    prefix = 'training' if train_or_test == 'train' else 'testing'
+    nof_examples = 194 if train_or_test == 'train' else 195
+    examples_list = []
+    for i in range(nof_examples):
+        index = i
+        id = str(i)
+        imL = os.path.join(prefix, 'colored_0', '{:06d}'.format(i) + '_10.png')
+        imR = os.path.join(prefix, 'colored_1', '{:06d}'.format(i) + '_10.png')
+        dispL = os.path.join(prefix, 'disp_occ', '{:06d}'.format(i) + '_10.png') if train_or_test == 'train' else None
+        dispR = None
 
-# add parent path of project
-parent = conf['PATHS']['parent_dir']
-ins = sys.path.insert(1, parent)
-ins if parent not in sys.path else 0
-
-# import custom modules
-abs = importlib.import_module('raw_dataset.abstract_classes')
-
-# parent path
-dataset_name = 'kitti_2012'
-PARENT_DIR = conf['DATASETS'][dataset_name]
-
-
-def gt2mask(x):
-    y = np.zeros_like(x)
-    y[x > 0.0] = 1
-    return y.astype(np.uint8)
+        example_dict = {'index': index, 'id': id,
+                        'imL': imL, 'imR': imR, 'dispL': dispL, 'dispR': dispR,
+                        'dataset': dataset_name}
+        examples_list.append(example_dict)
+    return examples_list
 
 
-class registry(abs.registry):
-    pass
+class split_dataset(abc.SplitDataset):
 
+    def _load_dict_with_all_registries(self):
+        return kitti_utils._load_dict_with_all_registries(dataset_dict_file)
 
-def _create_list(which):
-    assert which in ['train', 'test']
-    if which == 'train':
-        name1 = 'training'
-        tmp = os.path.join(PARENT_DIR, name1)
-        li = []
-        for i in range(194):
-            # info and paths
-            index = i
-            id = i
-            imL = os.path.join(
-                tmp, 'colored_0', '{:06d}'.format(i) + '_10.png')
-            imR = os.path.join(
-                tmp, 'colored_1', '{:06d}'.format(i) + '_10.png')
-            gtL = os.path.join(tmp, 'disp_occ', '{:06d}'.format(i) +
-                               '_10.png')
-            gtR = None
-
-            # add to list
-            dic = {'index': index, 'id': id, 'imL': imL, 'imR': imR,
-                   'gtL': gtL, 'gtR': gtR, 'dataset': dataset_name}
-            li.append(dic)
-        return li
-    else:
-        name1 = 'testing'
-        tmp = os.path.join(PARENT_DIR, name1)
-        li = []
-        for i in range(195):
-            # info and paths
-            index = i
-            id = i
-            imL = os.path.join(
-                tmp, 'colored_0', '{:06d}'.format(i) + '_10.png')
-            imR = os.path.join(
-                tmp, 'colored_1', '{:06d}'.format(i) + '_10.png')
-            gtL = None
-            gtR = None
-
-            # add to list
-            dic = {'index': index, 'id': id, 'imL': imL, 'imR': imR,
-                   'gtL': gtL, 'gtR': gtR, 'dataset': dataset_name}
-            li.append(dic)
-        return li
-
-
-def _load_registry(dic):
-    # load
-    imL_rgb = Image.open(dic['imL']).convert('RGB')
-    imR_rgb = Image.open(dic['imR']).convert('RGB')
-
-    # rgb -> gray
-    imL_g = imL_rgb.convert('LA')
-    imR_g = imR_rgb.convert('LA')
-
-    # load ground truth
-    if dic['gtL'] is not None:
-        gtL = np.array(Image.open(dic['gtL']), dtype=np.float32)/256.0
-        mask1 = gt2mask(gtL)
-        maxDL = np.max(gtL)
-    else:
-        gtL = None
-        mask1 = None
-        maxDL = None
-    if dic['gtR'] is not None:
-        gtR = np.array(Image.open(dic['gtR']), dtype=np.float32)/256.0
-        mask2 = gt2mask(gtR)
-        maxDR = np.max(gtR)
-    else:
-        gtR = None
-        mask2 = None
-        maxDR = None
-
-    # return registry instance
-    tmp = registry(dic['index'], dic['id'], imL_g, imR_g, imL_rgb,
-                   imR_rgb, gtL, gtR, mask1, mask2, maxDL, maxDR,
-                   dataset='kitti_2012')
-    return tmp
-
-
-class split_dataset(abs.split_dataset):
-
-    # funcs
     def _create_list(self, which):
-        return _create_list(which)
+        return _generate_list_with_all_registries(which)
 
     def load_registry(self, dic):
-        return _load_registry(dic)
+        return kitti_utils._load_registry(dataset_dir, dataset_name, dic)

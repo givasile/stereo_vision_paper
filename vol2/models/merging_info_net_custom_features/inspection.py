@@ -40,18 +40,18 @@ experiment_n_load_from = 1      # directory to load_from
 checkpoint_n = 15                # which checkpoint to load weights/stats from
 
 # preproccess
-which = 'test'
+which = 'train'
 form = 'full_im'
 limit_maxD = True
 get_standart_dataset = True
-which_dataset = 'freiburg_tr_te'
+which_dataset = 'kitti_2015'
 assert which_dataset in ['flying_tr_te',
                          'freiburg',
                          'freiburg_tr_te',
                          'kitti_2012',
                          'kitti_2015']
 # example_num
-example_num = 100
+example_num = 0
 
 device = 'cuda'
 
@@ -60,10 +60,11 @@ device = 'cuda'
 ####################################################
 
 # create instance of model
-if device == 'cpu':
-    model_instance = net.model()
-else:
-    model_instance = net.model().cuda()
+# if device == 'cpu':
+#     model_instance = net.model()
+# else:
+#     model_instance = net.model().cuda()
+
 
 # restore dataset
 if get_standart_dataset:
@@ -83,54 +84,57 @@ else:
     with open(dataset_path, 'rb') as fm:
         dataset = pickle.load(fm)
 
-parent = os.path.join(os.path.dirname(
-    os.path.dirname(parent_path)), 'saved_models/vol2', cnn_name)
+# print(dataset)
+# print(dataset.train[0])
 
-# restore weights
-checkpoint_path = os.path.join(parent, 'experiment_' + str(experiment_n_load_from)
-                               + '/checkpoint_' + str(checkpoint_n) + '.tar')
-checkpoint = torch.load(checkpoint_path)
-model_instance.load_state_dict(checkpoint['state_dict'])
+# parent = os.path.join(os.path.dirname(
+#     os.path.dirname(parent_path)), 'saved_models/vol2', cnn_name)
 
-# restore stats
-stats = checkpoint['stats']
-
-print('Number of model parameters: {}'.format(
-    sum([p.data.nelement() for p in model_instance.parameters()])))
-
-
+# # restore weights
+# checkpoint_path = os.path.join(parent, 'experiment_' + str(experiment_n_load_from)
+#                                + '/checkpoint_' + str(checkpoint_n) + '.tar')
+# checkpoint = torch.load(checkpoint_path)
+# model_instance.load_state_dict(checkpoint['state_dict'])
+#
+# # restore stats
+# stats = checkpoint['stats']
+#
+# print('Number of model parameters: {}'.format(
+#     sum([p.data.nelement() for p in model_instance.parameters()])))
+#
+#
 # input
 data_feeder = preprocess.dataset(dataset, which, form, limit_maxD)
 imL, imR, dispL, maskL = data_feeder[example_num]
-imL = imL.unsqueeze(0).cuda()
-imR = imR.unsqueeze(0).cuda()
-max_limit = dispL.max()
-dispL = dispL.unsqueeze(0).cuda()
-maskL = maskL.type(torch.bool).unsqueeze(0).cuda()
-
-# inspection
-max_disp = 192
-h = imL.shape[2]
-w = imL.shape[3]
-initial_scale = [max_disp, h, w]
-scales = [[round(max_disp/4), round(h/4), round(w/4)],
-          [round(max_disp/8), round(h/8), round(w/8)],
-          [round(max_disp/16), round(h/16), round(w/16)],
-          [round(max_disp/32), round(h/32), round(w/32)]]
-
-prediction_from_scales = {0: ['after'],
-                          1: ['after'],
-                          2: ['after'],
-                          3: ['after']}
-scales = [[round(max_disp/4), round(h/4), round(w/4)]]
-prediction_from_scales = {0: ['after']}
-
-
-
-tmp = timeit.default_timer()
-mae, err_pcg, imL_d, imR_d, volumes, volumes_dict, for_out_dict, predictions_dict = net.inspection(
-    model_instance, initial_scale, scales, prediction_from_scales, device, imL, imR, dispL, maskL)
-print("Inspection execution time: %s" % (timeit.default_timer()-tmp))
+# imL = imL.unsqueeze(0).cuda()
+# imR = imR.unsqueeze(0).cuda()
+# max_limit = dispL.max()
+# dispL = dispL.unsqueeze(0).cuda()
+# maskL = maskL.type(torch.bool).unsqueeze(0).cuda()
+#
+# # inspection
+# max_disp = 192
+# h = imL.shape[2]
+# w = imL.shape[3]
+# initial_scale = [max_disp, h, w]
+# scales = [[round(max_disp/4), round(h/4), round(w/4)],
+#           [round(max_disp/8), round(h/8), round(w/8)],
+#           [round(max_disp/16), round(h/16), round(w/16)],
+#           [round(max_disp/32), round(h/32), round(w/32)]]
+#
+# prediction_from_scales = {0: ['after'],
+#                           1: ['after'],
+#                           2: ['after'],
+#                           3: ['after']}
+# scales = [[round(max_disp/4), round(h/4), round(w/4)]]
+# prediction_from_scales = {0: ['after']}
+#
+#
+#
+# tmp = timeit.default_timer()
+# mae, err_pcg, imL_d, imR_d, volumes, volumes_dict, for_out_dict, predictions_dict = net.inspection(
+#     model_instance, initial_scale, scales, prediction_from_scales, device, imL, imR, dispL, maskL)
+# print("Inspection execution time: %s" % (timeit.default_timer()-tmp))
 
 # visualize.imshow_3ch(imL.squeeze(0).cpu(), 'imL')
 # visualize.imshow_3ch(imR.squeeze(0).cpu(), 'imR')
