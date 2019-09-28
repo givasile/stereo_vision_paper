@@ -32,9 +32,10 @@ class Dataset:
         self.train: List[Dict] = []
         self.val: List[Dict] = []
         self.test: List[Dict] = []
-        self.split: np.ndarray = np.zeros(3)
 
         if create_load == 'create':
+            print("Creating new merged_dataset... \n")
+            tot_split = np.zeros(3)
             for key, val in dataset_mixture.items():
                 name = key
                 split = val
@@ -43,7 +44,7 @@ class Dataset:
                 mod = importlib.import_module('raw_dataset.' + name)
 
                 # initialise instance of raw dataset
-                split_dataset = mod.SplitDataset(split)
+                split_dataset = mod.SplitDataset(split, create_load='create', state_dict=None)
 
                 # set instance as attribute
                 setattr(self, str(name+'_split'), split_dataset)
@@ -55,10 +56,11 @@ class Dataset:
 
                 # create split attr
                 dat_split = split_dataset.split
-                self.split += np.array(dat_split)
+                tot_split += np.array(dat_split)
 
-            self.split = self.split.astype(np.int).tolist()
+            self.split: List = list(tot_split.astype(np.int))
         else:
+            split = np.zeros(3)
             for key, val in state_dict.items():
                 name = key.split('_split')[0]
                 # dynamically import module
@@ -77,16 +79,16 @@ class Dataset:
 
                 # create split attr
                 dat_split = split_dataset.split
-                self.split += np.array(dat_split)
+                split += np.array(dat_split)
 
-            self.split = self.split.astype(np.int).tolist()
+            self.split: List = list(split.astype(np.int))
 
     def load(self, index: int, which_set: str):
         assert which_set in ['train', 'val', 'test']
 
         # check that index is inside dataset limits
         if which_set == 'train':
-            assert self.split[0] > index
+            assert self.split[0] > index, index
         if which_set == 'val':
             assert self.split[1] > index
         if which_set == 'test':

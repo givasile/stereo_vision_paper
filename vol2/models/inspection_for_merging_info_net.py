@@ -1,8 +1,9 @@
-import sys
-import os
 import configparser
 import importlib
+import os
+import sys
 import timeit
+
 import torch
 
 # configuration
