@@ -1,13 +1,15 @@
 import sys
+import os
 import configparser
 import importlib
 import timeit
+import torch
 
-# configuration vars
-cnn_name: str = 'merging_info_net_custom_features'
+# configuration
+cnn_name: str = 'merging_info_net_custom_features_free_2d_weights'
 
 experiment_n = 1
-checkpoint_n = 15
+checkpoint_n = 10
 which = 'train'
 form = 'full_im'
 limit_maxD = True
@@ -18,13 +20,41 @@ device = 'cuda'
 
 
 def run(conf_file):
+    # import all needed modules
     utils = importlib.import_module('vol2.models.utils')
     net = importlib.import_module('vol2.models.' + cnn_name + '.' + cnn_name)
+    preprocess = importlib.import_module('preprocess')
 
-    # load everything needed
-    imL, imR, dispL, maskL, model_instance = utils.load_things_for_inspection(
-        cnn_name, conf_file, checkpoint_n, experiment_n, get_common_dataset,
-        common_dataset_name, device, which, form, limit_maxD, example_num)
+    # create helpful paths
+    experiment_directory = os.path.join(conf_file['PATHS']['saved_models'], 'vol2', cnn_name, 'experiment_' + str(experiment_n))
+    checkpoint_filepath = os.path.join(experiment_directory, 'checkpoint_' + str(checkpoint_n) + '.tar')
+
+    # load dataset
+    if get_common_dataset:
+        merged_dataset = utils.load_common_dataset(common_dataset_name, conf_file['PATHS']['common_datasets'])
+    else:
+        merged_dataset = utils.load_specific_dataset(experiment_directory)
+
+    # create model
+    if device == 'cpu':
+        model_instance = net.model()
+    else:
+        model_instance = net.model().cuda()
+
+    # restore weights
+    checkpoint = torch.load(checkpoint_filepath)
+    model_instance.load_state_dict(checkpoint['state_dict'])
+
+    # restore training statistics
+    stats = checkpoint['stats']
+
+    data_feeder = preprocess.dataset(merged_dataset, which, form, limit_maxD)
+    imL, imR, dispL, maskL = data_feeder[example_num]
+    imL = imL.unsqueeze(0).cuda()
+    imR = imR.unsqueeze(0).cuda()
+    max_limit = dispL.max()
+    dispL = dispL.unsqueeze(0).cuda()
+    maskL = maskL.type(torch.bool).unsqueeze(0).cuda()
 
     max_disp = 192
     h = imL.shape[2]
@@ -34,7 +64,6 @@ def run(conf_file):
               [round(max_disp/8), round(h/8), round(w/8)],
               [round(max_disp/16), round(h/16), round(w/16)],
               [round(max_disp/32), round(h/32), round(w/32)]]
-
     prediction_from_scales = {3: ['after'],
                               2: ['after'],
                               1: ['after'],
@@ -61,7 +90,7 @@ def run(conf_file):
 
 if __name__ == '__main__':
     # import config file
-    conf_path = './../../../conf.ini'
+    conf_path = './../../conf.ini'
     conf = configparser.ConfigParser()
     conf.read(conf_path)
 

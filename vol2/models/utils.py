@@ -1,8 +1,8 @@
 import raw_dataset.merged_dataset as merged_dataset
 import os
-import pickle
-import importlib
 import torch
+import importlib
+import pickle
 
 
 def load_common_dataset(dataset_name: str, common_dataset_dir: str) -> merged_dataset.Dataset:
@@ -63,7 +63,3 @@ def load_things_for_inspection(cnn_name, conf_file, checkpoint_n, experiment_n, 
     maskL = maskL.type(torch.bool).unsqueeze(0).cuda()
 
     return imL, imR, dispL, maskL, model_instance
-
-
-
-
