@@ -17,93 +17,56 @@ import matplotlib.pyplot as plt
 cnn_name = 'merging_info_net_custom_features'
 
 # import config file
-conf_path = './../../conf.ini'
-conf = configparser.ConfigParser()
-conf.read(conf_path)
+conf_path = './../conf.ini'
+conf_file = configparser.ConfigParser()
+conf_file.read(conf_path)
 
 # add parent path, if not already added
-parent_path = conf['PATHS']['PARENT_DIR']
-ins = sys.path.insert(1, parent_path)
-ins if parent_path not in sys.path else 0
+parent_path = conf_file['PATHS']['PARENT_DIR']
+sys.path.insert(1, parent_path) if parent_path not in sys.path else 0
 
-# import custom modulesn
-# submodules = importlib.import_module('vol2.models.' + cnn_name + '.submodules')
+# import all needed modules
+utils = importlib.import_module('vol2.models.utils')
 net = importlib.import_module('vol2.models.' + cnn_name + '.' + cnn_name)
-merged = importlib.import_module('raw_dataset.merged_dataset')
 preprocess = importlib.import_module('preprocess')
 evaluate = importlib.import_module('evaluate')
-visualize = importlib.import_module('visualize')
 
-####################################################
-################# Configuration ####################
-####################################################
-
-# directory to load_from
-experiment_n_load_from = 1      # directory to load_from
+experiment_n = 1      # directory to load_from
 checkpoint_n = 15                # which checkpoint to load weights/stats from
-
-# preproccess
 which = 'test'
 form = 'full_im'
 limit_maxD = True
-get_standart_dataset = True
-which_dataset = 'freiburg_tr_te'
-assert which_dataset in ['flying_tr_te',
-                         'freiburg',
-                         'freiburg_tr_te',
-                         'kitti_2012',
-                         'kitti_2015']
-# example_num
+get_common_dataset = True
+common_dataset_name = 'freiburg_tr_te'
 example_num = 100
-
 device = 'cuda'
 
-####################################################
-# exec init operations and define global variables #
-####################################################
+# create helpful paths
+experiment_directory = os.path.join(conf_file['PATHS']['saved_models'], 'vol2', cnn_name,
+                                    'experiment_' + str(experiment_n))
+checkpoint_filepath = os.path.join(experiment_directory, 'checkpoint_' + str(checkpoint_n) + '.tar')
 
-# create instance of model
+# load dataset
+if get_common_dataset:
+    merged_dataset = utils.load_common_dataset(common_dataset_name, conf_file['PATHS']['common_datasets'])
+else:
+    merged_dataset = utils.load_specific_dataset(experiment_directory)
+
+# create model
 if device == 'cpu':
     model_instance = net.model()
 else:
     model_instance = net.model().cuda()
 
-# restore dataset
-if get_standart_dataset:
-    parent = os.path.join(os.path.dirname(
-        os.path.dirname(parent_path)), 'saved_models', 'common_datasets')
-    dataset = os.path.join(parent, which_dataset + '.pickle')
-    assert os.path.exists(dataset)
-    with open(dataset, 'rb') as fm:
-        dataset = pickle.load(fm)
-
-else:
-    parent = os.path.join(os.path.dirname(
-    os.path.dirname(parent_path)), 'saved_models/vol2', cnn_name)
-
-    dataset_path = os.path.join(parent, 'experiment_' + str(experiment_n_load_from)
-                                + '/merged_dataset.pickle')
-    with open(dataset_path, 'rb') as fm:
-        dataset = pickle.load(fm)
-
-parent = os.path.join(os.path.dirname(
-    os.path.dirname(parent_path)), 'saved_models/vol2', cnn_name)
-
 # restore weights
-checkpoint_path = os.path.join(parent, 'experiment_' + str(experiment_n_load_from)
-                               + '/checkpoint_' + str(checkpoint_n) + '.tar')
-checkpoint = torch.load(checkpoint_path)
+checkpoint = torch.load(checkpoint_filepath)
 model_instance.load_state_dict(checkpoint['state_dict'])
 
-# restore stats
+# restore training statistics
 stats = checkpoint['stats']
 
-print('Number of model parameters: {}'.format(
-    sum([p.data.nelement() for p in model_instance.parameters()])))
-
-
 # input
-data_feeder = preprocess.dataset(dataset, which, form, limit_maxD)
+data_feeder = preprocess.dataset(merged_dataset, which, form, limit_maxD)
 imL, imR, dispL, maskL = data_feeder[example_num]
 imL = imL.unsqueeze(0).cuda()
 imR = imR.unsqueeze(0).cuda()
@@ -135,22 +98,23 @@ print("Inspection execution time: %s" % (timeit.default_timer()-tmp))
 
 # visualize
 def plot_and_save_PIL(im, name):
-    base_path = "/home/givasile/stereo_vision/paper/images/figure_2/"
+    base_path = "./latex/figures/"
     with open(base_path + name + '.png', 'wb') as fm:
         im.save(fm)
 
 def plot_and_save(im, name):
-    base_path = '/home/givasile/stereo_vision/paper/images/figure_2/'
+    base_path = './latex/figures/'
     plt.figure();
     # plt.title(name);
     im = plt.imshow(im);
     plt.axis('off');
     im.set_cmap('gray');
-    plt.show(block=False)
     plt.savefig(base_path + name + '.png', bbox_inches = 'tight')
+    plt.show(block=False)
+
     
 def plot_err_image(image, name):
-    base_path = '/home/givasile/stereo_vision/paper/images/figure_2/'
+    base_path = './latex/figures/'
     image = image[0].numpy()
     image[image > 5] = 5
     plt.figure();
@@ -159,11 +123,11 @@ def plot_err_image(image, name):
     im = plt.imshow(image);
     # plt.colorbar()
     im.set_cmap('afmhot');
-    plt.show(block=False)
     plt.savefig(base_path + name + '.png', bbox = 'tight')
+    plt.show(block=False)
 
-    
-imL = dataset.load(example_num, which).imL_rgb
+
+imL = merged_dataset.load(example_num, which).imL_rgb
 plot_and_save_PIL(imL, 'imL')
 
 imL_0 = imL.resize((scales[0][2], scales[0][1]), PIL.Image.BILINEAR)
@@ -208,7 +172,7 @@ plot_and_save(pred_comb_3, 'pred_comb_3')
 
 
 # only at scale 0
-data_feeder = preprocess.dataset(dataset, which, form, limit_maxD)
+data_feeder = preprocess.dataset(merged_dataset, which, form, limit_maxD)
 imL, imR, dispL, maskL = data_feeder[example_num]
 imL = imL.unsqueeze(0).cuda()
 imR = imR.unsqueeze(0).cuda()
@@ -236,7 +200,7 @@ plot_and_save(pred_0, 'pred_0')
 
 
 # only at scale 1
-data_feeder = preprocess.dataset(dataset, which, form, limit_maxD)
+data_feeder = preprocess.dataset(merged_dataset, which, form, limit_maxD)
 imL, imR, dispL, maskL = data_feeder[example_num]
 imL = imL.unsqueeze(0).cuda()
 imR = imR.unsqueeze(0).cuda()
@@ -263,7 +227,7 @@ plot_err_image(pred_1_err, 'pred_1_err')
 plot_and_save(pred_1, 'pred_1')
 
 # only at scale 2
-data_feeder = preprocess.dataset(dataset, which, form, limit_maxD)
+data_feeder = preprocess.dataset(merged_dataset, which, form, limit_maxD)
 imL, imR, dispL, maskL = data_feeder[example_num]
 imL = imL.unsqueeze(0).cuda()
 imR = imR.unsqueeze(0).cuda()
@@ -290,7 +254,7 @@ plot_err_image(pred_2_err, 'pred_2_err')
 plot_and_save(pred_2, 'pred_2')
 
 # only at scale 3
-data_feeder = preprocess.dataset(dataset, which, form, limit_maxD)
+data_feeder = preprocess.dataset(merged_dataset, which, form, limit_maxD)
 imL, imR, dispL, maskL = data_feeder[example_num]
 imL = imL.unsqueeze(0).cuda()
 imR = imR.unsqueeze(0).cuda()

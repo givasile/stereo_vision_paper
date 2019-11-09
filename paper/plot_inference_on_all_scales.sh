@@ -1,6 +1,6 @@
 python plot_inference_on_all_scales.py
 
-base_path="/home/givasile/stereo_vision/paper/images/figure_2/"
+base_path="./latex/figures/"
 convert "${base_path}pred_0.png" -trim "${base_path}pred_0.png"
 convert "${base_path}pred_1.png" -trim "${base_path}pred_1.png"
 convert "${base_path}pred_2.png" -trim "${base_path}pred_2.png"
