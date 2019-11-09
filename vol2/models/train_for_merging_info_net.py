@@ -6,16 +6,16 @@ import time
 import os
 
 
-cnn_name = 'merging_info_net_custom_features'
+cnn_name = 'merging_info_net_custom_features_free_2d_3d_weights'
 
-action = 'finetune'
+action = 'keep_training'
 assert action in ['from_scratch', 'keep_training', 'finetune']
 
 # directory to load_from
-experiment_n_load_from = 3  # directory to load_from
-experiment_n_save_to = 100  # directory to save_to
-chekpoint_n = 200  # which checkpoint to load weights/stats from
-get_common_dataset = False  # get_standart_dataset
+experiment_n_load_from = 23  # directory to load_from
+experiment_n_save_to = 23  # directory to save_to
+chekpoint_n = 1  # which checkpoint to load weights/stats from
+get_common_dataset = True  # get_standart_dataset
 common_dataset_name = 'flying_tr_te_30'  # which standard dataset to load from
 
 # training parameters
@@ -35,7 +35,7 @@ dataset_mixture = {'kitti_2012': [0, 0, 0],
                  'kitti_2015': [0, 0, 0],
                  'freiburg_monkaa': [1, 1, 0],
                  'freiburg_driving': [1, 1, 0],
-                 'freiburg_flying': [1, 1, 9]}
+                 'freiburg_flying': [2, 2, 2]}
 
 
 def run(conf_file):
@@ -48,7 +48,6 @@ def run(conf_file):
     experiment_directory = utils.create_directory_to_store_experiment(conf_file, cnn_name, experiment_n_save_to)
     directory_to_load_from = os.path.join(conf['PATHS']['saved_models'], 'vol2', cnn_name, 'experiment_' + str(experiment_n_load_from))
 
-    # init model and optimizer
     # create instance of model
     if device == 'cpu':
         model_instance = net.model()
@@ -160,7 +159,7 @@ def run(conf_file):
                                       2: ['after'],
                                       1: ['after'],
                                       0: ['after']}
-            net.validate('val', 'full', dataset, 2, stats, model_instance, initial_scale,
+            net.validate('val', 'full', dataset, 1, stats, model_instance, initial_scale,
                          scales, prediction_from_scales, device)
             net.save_checkpoint(model_instance, optimizer, stats, experiment_directory)
             torch.cuda.empty_cache()
@@ -180,7 +179,7 @@ def run(conf_file):
                                       1: ['after'],
                                       0: ['after']}
 
-            net.validate('test', 'crop', dataset, 8, stats, model_instance, initial_scale,
+            net.validate('test', 'crop', dataset, 4, stats, model_instance, initial_scale,
                          scales, prediction_from_scales, device)
             net.save_checkpoint(model_instance, optimizer, stats, experiment_directory)
             torch.cuda.empty_cache()
@@ -200,7 +199,7 @@ def run(conf_file):
                                       1: ['after'],
                                       0: ['after']}
 
-            net.validate('test', 'full', dataset, 2, stats, model_instance, initial_scale,
+            net.validate('test', 'full', dataset, 1, stats, model_instance, initial_scale,
                          scales, prediction_from_scales, device)
             net.save_checkpoint(model_instance, optimizer, stats, experiment_directory)
             torch.cuda.empty_cache()
