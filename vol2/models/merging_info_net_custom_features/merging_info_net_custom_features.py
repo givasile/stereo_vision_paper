@@ -326,6 +326,11 @@ def validate(which, form, merged, batch_size, stats, model_instance, initial_sca
     val_start_time = time.time()
     for key in prediction_from_scales.keys():
         for key1 in prediction_from_scales[key]:
+            if str(key)+'_'+key1 not in stats[which+'_'+form]['mae'].keys():
+                stats[which+'_'+form]['mae'][str(key)+'_'+key1] = []
+            if str(key)+'_'+key1 not in stats[which+'_'+form]['pcg'].keys():
+                stats[which+'_'+form]['pcg'][str(key)+'_'+key1] = []
+                
             stats[which+'_'+form]['mae'][str(key)+'_'+key1].append([])
             stats[which+'_'+form]['pcg'][str(key)+'_'+key1].append([])
 
@@ -337,14 +342,14 @@ def validate(which, form, merged, batch_size, stats, model_instance, initial_sca
             dispL = dispL.cuda()
             maskL = maskL.cuda()
 
-            max_disp = 192
-            h = imL.shape[2]
-            w = imL.shape[3]
-            tmp = [4, 8, 16, 32]
-            scales = [[round(max_disp/tmp[0]), round(h/tmp[0]), round(w/tmp[0])],
-                      [round(max_disp/tmp[1]), round(h/tmp[1]), round(w/tmp[1])],
-                      [round(max_disp/tmp[2]), round(h/tmp[2]), round(w/tmp[2])],
-                      [round(max_disp/tmp[3]), round(h/tmp[3]), round(w/tmp[3])]]
+            # max_disp = 192
+            # h = imL.shape[2]
+            # w = imL.shape[3]
+            # tmp = [4, 8, 16, 32]
+            # scales = [[round(max_disp/tmp[0]), round(h/tmp[0]), round(w/tmp[0])],
+            #           [round(max_disp/tmp[1]), round(h/tmp[1]), round(w/tmp[1])],
+            #           [round(max_disp/tmp[2]), round(h/tmp[2]), round(w/tmp[2])],
+            #           [round(max_disp/tmp[3]), round(h/tmp[3]), round(w/tmp[3])]]
 
             mae, pcg, _ = inference(model_instance, initial_scale, scales,
                                     prediction_from_scales,
