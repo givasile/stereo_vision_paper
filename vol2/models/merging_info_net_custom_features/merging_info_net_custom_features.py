@@ -196,12 +196,6 @@ def training_epoch(merged, batch_size, stats, model_instance, optimizer, initial
             h = imL.shape[2]
             w = imL.shape[3]
 
-            tmp = [4, 8, 16, 32]
-            scales = [[round(max_disp/tmp[0]), round(h/tmp[0]), round(w/tmp[0])],
-                      [round(max_disp/tmp[1]), round(h/tmp[1]), round(w/tmp[1])],
-                      [round(max_disp/tmp[2]), round(h/tmp[2]), round(w/tmp[2])],
-                      [round(max_disp/tmp[3]), round(h/tmp[3]), round(w/tmp[3])]]
-
             mae, err_pcg, loss = training_step(model_instance, initial_scale, scales,
                                                prediction_from_scales, device, optimizer,
                                                loss_from_scales_in_training,
@@ -342,15 +336,6 @@ def validate(which, form, merged, batch_size, stats, model_instance, initial_sca
             dispL = dispL.cuda()
             maskL = maskL.cuda()
 
-            # max_disp = 192
-            # h = imL.shape[2]
-            # w = imL.shape[3]
-            # tmp = [4, 8, 16, 32]
-            # scales = [[round(max_disp/tmp[0]), round(h/tmp[0]), round(w/tmp[0])],
-            #           [round(max_disp/tmp[1]), round(h/tmp[1]), round(w/tmp[1])],
-            #           [round(max_disp/tmp[2]), round(h/tmp[2]), round(w/tmp[2])],
-            #           [round(max_disp/tmp[3]), round(h/tmp[3]), round(w/tmp[3])]]
-
             mae, pcg, _ = inference(model_instance, initial_scale, scales,
                                     prediction_from_scales,
                                     device, imL, imR, dispL, maskL)
@@ -387,54 +372,6 @@ def validate(which, form, merged, batch_size, stats, model_instance, initial_sca
             print('%s_%s, σ(PCG) = %.2f' %
                   (key, key1, np.std(stats[which+'_'+form]['pcg'][str(key)+'_'+key1][epoch-1])))
     print('\n')
-
-
-def train_over_dataset(stats):
-    start_full_time = time.time()
-    init_epoch = stats['general']['cur_epoch']
-
-    torch.cuda.empty_cache()
-    # START EPOCH
-    for ep in range(init_epoch, init_epoch + train_for_epochs):
-
-        # TRAINING PART
-        if train_on_crop:
-            stats = training_epoch(stats, batch_size=2)
-        save_state_dict(save_to, ep)
-
-        # VAL_CROP
-        if val_on_val_crop:
-            stats = validate('val', 'crop', dataset,
-                             batch_size=1, stats=stats)
-        save_state_dict(save_to, ep)
-
-        # VAL_FULL
-        if val_on_val_full:
-            stats = validate('val', 'full', dataset,
-                             batch_size=1, stats=stats)
-        save_state_dict(save_to, ep)
-
-        # TEST_CROP
-        if val_on_test_crop:
-            stats = validate('test', 'crop', dataset,
-                             batch_size=1, stats=stats)
-        save_state_dict(save_to, ep)
-
-        # TEST_FULL
-        if val_on_test_full:
-            stats = validate('test', 'full', dataset,
-                             batch_size=1, stats=stats)
-        save_state_dict(save_to, ep)
-
-        # update current epoch
-        stats['general']['cur_epoch'] += 1
-        save_state_dict(save_to, ep)
-
-        torch.cuda.empty_cache()
-
-    print('full training time = %.2f hours' %
-          ((time.time() - start_full_time)/3600))
-    return stats
 
 
 def save_checkpoint(model_instance, optimizer, stats, save_to, epoch=None):
