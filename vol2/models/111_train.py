@@ -6,16 +6,16 @@ import time
 import os
 
 
-cnn_name = 'merging_info_net_custom_features_free_2d_3d_weights'
+cnn_name = 'merging_info_net_custom_features'
 
-action = 'keep_training'
+action = 'finetune'
 assert action in ['from_scratch', 'keep_training', 'finetune']
 
 # directory to load_from
-experiment_n_load_from = 23  # directory to load_from
-experiment_n_save_to = 23  # directory to save_to
-chekpoint_n = 2  # which checkpoint to load weights/stats from
-get_common_dataset = False  # get_standart_dataset
+experiment_n_load_from = 1  # directory to load_from
+experiment_n_save_to = 111  # directory to save_to
+chekpoint_n = 15  # which checkpoint to load weights/stats from
+get_common_dataset = True  # get_standart_dataset
 common_dataset_name = 'flying_tr_te'  # which standard dataset to load from
 
 # training parameters
@@ -23,7 +23,7 @@ train_for_epochs = 1  # how many epochs to train
 lr = 0.001  # learning rate
 
 # where to validate on
-train_on_crop = True  # training
+train_on_crop = False  # training
 val_on_val_crop = False  # validate on val_crop
 val_on_val_full = False  # validate on val_full
 val_on_test_crop = False  # validate on test_crop
@@ -192,13 +192,11 @@ def run(conf_file):
             initial_scale = [max_disp, h, w]
             scales = [[round(max_disp/4), round(h/4), round(w/4)],
                       [round(max_disp/8), round(h/8), round(w/8)],
-                      [round(max_disp/16), round(h/16), round(w/16)],
-                      [round(max_disp/32), round(h/32), round(w/32)]]
-            prediction_from_scales = {3: ['after'],
-                                      2: ['after'],
+                      [round(max_disp/16), round(h/16), round(w/16)]]
+            prediction_from_scales = {2: ['after'],
                                       1: ['after'],
                                       0: ['after']}
-            scales = [[round(max_disp/8), round(h/8), round(w/8)]]
+
             net.validate('test', 'full', dataset, 1, stats, model_instance, initial_scale,
                          scales, prediction_from_scales, device)
             net.save_checkpoint(model_instance, optimizer, stats, experiment_directory)

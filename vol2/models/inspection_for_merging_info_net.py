@@ -10,7 +10,7 @@ import torch
 cnn_name: str = 'merging_info_net_custom_features_free_2d_weights'
 
 experiment_n = 1
-checkpoint_n = 10
+checkpoint_n = 15
 which = 'train'
 form = 'full_im'
 limit_maxD = True
@@ -55,17 +55,21 @@ def run(conf_file):
     imR = imR.unsqueeze(0).cuda()
     max_limit = dispL.max()
     dispL = dispL.unsqueeze(0).cuda()
-    maskL = maskL.type(torch.bool).unsqueeze(0).cuda()
+    maskL = maskL.unsqueeze(0).cuda()
 
     max_disp = 192
     h = imL.shape[2]
     w = imL.shape[3]
     initial_scale = [max_disp, h, w]
     scales = [[round(max_disp/4), round(h/4), round(w/4)],
+              [round(max_disp/6), round(h/6), round(w/6)],              
               [round(max_disp/8), round(h/8), round(w/8)],
+              [round(max_disp/12), round(h/12), round(w/12)],
               [round(max_disp/16), round(h/16), round(w/16)],
               [round(max_disp/32), round(h/32), round(w/32)]]
-    prediction_from_scales = {3: ['after'],
+    prediction_from_scales = {5: ['after'],
+                              4: ['after'],
+                              3: ['after'],
                               2: ['after'],
                               1: ['after'],
                               0: ['after']}
