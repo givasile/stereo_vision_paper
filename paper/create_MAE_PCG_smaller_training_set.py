@@ -31,13 +31,13 @@ for key, val in tmp.items():
 tmp1 = hf.prepend_path(tmp1, dir_saved_models)
 
 # get latest checkpoint
-freiburg_standard_checkpoint_1 = hf.choose_specific_checkpoint(hf.append_path(tmp1, 'experiment_1'), 10)
-freiburg_last_checkpoint_21 = hf.find_last_checkpoint(hf.append_path(tmp1, 'experiment_21'))
-freiburg_last_checkpoint_23 = hf.find_last_checkpoint(hf.append_path(tmp1, 'experiment_23'))
-freiburg_last_checkpoint_25 = hf.find_last_checkpoint(hf.append_path(tmp1, 'experiment_25'))
-freiburg_last_checkpoint_27 = hf.find_last_checkpoint(hf.append_path(tmp1, 'experiment_27'))
+freiburg_checkpoint_1 = hf.choose_specific_checkpoint(hf.append_path(tmp1, 'experiment_1'), 4)
+freiburg_checkpoint_21 = hf.choose_specific_checkpoint(hf.append_path(tmp1, 'experiment_21'), 4)
+freiburg_checkpoint_23 = hf.choose_specific_checkpoint(hf.append_path(tmp1, 'experiment_23'), 4)
+freiburg_checkpoint_25 = hf.find_last_checkpoint(hf.append_path(tmp1, 'experiment_25'))
+freiburg_checkpoint_27 = hf.find_last_checkpoint(hf.append_path(tmp1, 'experiment_27'))
 
-# TODO: ensure latest checkpoint is the 10th
+
 def plot(fig_name, title, mae_or_pcg, tr_te_val):
     cnn_to_plot = ['scalable_net',
                    'scalable_net_free_2d',
@@ -59,11 +59,11 @@ def plot(fig_name, title, mae_or_pcg, tr_te_val):
                     x.append(pcg*100)
                     y.append(np.mean(last_epoch))
 
-        add_results_to_x_y(0.1, freiburg_last_checkpoint_21)
-        add_results_to_x_y(0.3, freiburg_last_checkpoint_23)
-        add_results_to_x_y(0.5, freiburg_last_checkpoint_25)
-        add_results_to_x_y(0.7, freiburg_last_checkpoint_27)
-        add_results_to_x_y(1, freiburg_standard_checkpoint_1)
+        add_results_to_x_y(0.1, freiburg_checkpoint_21)
+        add_results_to_x_y(0.3, freiburg_checkpoint_23)
+        add_results_to_x_y(0.5, freiburg_checkpoint_25)
+        add_results_to_x_y(0.7, freiburg_checkpoint_27)
+        add_results_to_x_y(1, freiburg_checkpoint_1)
 
         ax.plot(x, y, hf.coloring[cnn_name] + '-o', label=hf.labeling[cnn_name])
 

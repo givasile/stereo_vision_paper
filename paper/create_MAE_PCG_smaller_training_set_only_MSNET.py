@@ -57,7 +57,7 @@ def plot(fig_name, title, mae_or_pcg, tr_te_val):
 
     fig.suptitle(title)
     ax.set_ylabel("pixels") if mae_or_pcg == "mae" else ax.set_ylabel("pcg")
-    ax.set_xlabel("pcg of training set")
+    ax.set_xlabel("training epoch")
     ax.legend()
     fig.savefig(os.path.join(dir_latex_figures, fig_name), bbox_inches='tight')
     plt.show()
