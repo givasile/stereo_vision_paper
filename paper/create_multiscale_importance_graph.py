@@ -14,6 +14,7 @@ from scipy.special import softmax
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib.patches import Patch
+from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
 
 
 # import config file
@@ -27,8 +28,8 @@ sys.path.insert(1, parent_path) if parent_path not in sys.path else 0
 
 ################# Configuration ####################
 cnn_name = 'merging_info_net_custom_features'
-save_fig = True
-high_low = 'low'
+save_fig = False
+high_low = 'high'
 
 # directory to load_from
 experiment_n = 1      # directory to load_from
@@ -264,7 +265,7 @@ if save_fig:
         plt.savefig('.latex/figures/multiscale_importance_graph_image_patches.pdf', bbox_inches = 'tight')
     
 
-plt.show(block=False)
+plt.show(block=True)
 
 
 # save image
@@ -286,4 +287,4 @@ plt.axis('off')
 # plt.tight_layout()
 if save_fig:
     plt.savefig('./latex/figures/multiscale_importance_image_patches.pdf', bbox_inches = 'tight')
-plt.show(block=False)
+plt.show(block=True)

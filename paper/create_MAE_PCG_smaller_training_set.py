@@ -31,11 +31,11 @@ for key, val in tmp.items():
 tmp1 = hf.prepend_path(tmp1, dir_saved_models)
 
 # get latest checkpoint
-freiburg_checkpoint_1 = hf.choose_specific_checkpoint(hf.append_path(tmp1, 'experiment_1'), 4)
-freiburg_checkpoint_21 = hf.choose_specific_checkpoint(hf.append_path(tmp1, 'experiment_21'), 4)
-freiburg_checkpoint_23 = hf.choose_specific_checkpoint(hf.append_path(tmp1, 'experiment_23'), 4)
-freiburg_checkpoint_25 = hf.find_last_checkpoint(hf.append_path(tmp1, 'experiment_25'))
-freiburg_checkpoint_27 = hf.find_last_checkpoint(hf.append_path(tmp1, 'experiment_27'))
+freiburg_checkpoint_1 = hf.choose_specific_checkpoint(hf.append_path(tmp1, 'experiment_1'), 3)
+freiburg_checkpoint_21 = hf.choose_specific_checkpoint(hf.append_path(tmp1, 'experiment_21'), 3)
+freiburg_checkpoint_23 = hf.choose_specific_checkpoint(hf.append_path(tmp1, 'experiment_23'), 3)
+freiburg_checkpoint_25 = hf.choose_specific_checkpoint(hf.append_path(tmp1, 'experiment_25'), 3)
+freiburg_checkpoint_27 = hf.choose_specific_checkpoint(hf.append_path(tmp1, 'experiment_27'), 3)
 
 
 def plot(fig_name, title, mae_or_pcg, tr_te_val):
