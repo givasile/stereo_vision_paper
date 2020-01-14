@@ -1,4 +1,4 @@
-success_story = 'high';
+success_story = 'low';
 save_im = true;
 save_folder = 'C:\Users\vasil\stereo_vision\src\stereo_vision\paper\latex\figures\';
 rng(3);
@@ -152,7 +152,7 @@ if strcmp(success_story, 'high')
     legend(ax2, {latex_expr(ps_a), latex_expr(ps_b), latex_expr(ps_a, down_rate_float)}, 'Interpreter', 'latex')
     
     if save_im
-        saveas(fig2, strcat(save_folder, 'high_resolution_success_graph.pdf'));
+        saveas(fig2, strcat(save_folder, 'high_resolution_success_graph.eps'));
     end
     
     % imL fine scale
@@ -234,7 +234,7 @@ elseif strcmp(success_story, 'low')
     legend(ax2, {latex_expr(ps_a), latex_expr(ps_b), latex_expr(ps_a, down_rate_float)}, 'Interpreter', 'latex')
     
     if save_im
-        saveas(fig2, strcat(save_folder, 'low_resolution_success_graph.pdf'))
+        saveas(fig2, strcat(save_folder, 'low_resolution_success_graph.eps'))
     end
     
     % imL fine scale
