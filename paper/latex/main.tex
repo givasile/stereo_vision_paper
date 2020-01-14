@@ -56,7 +56,7 @@ Shaked and Wolf [12] introduce an initial disparity prediction network pooling g
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Multiscale analysis}
 
-Disparity estimation is based on the hypothesis that the local context of correspondent points is similar. If we define as $P_{n \times n}[x,y]$ the  $n \times n$ square patch centred at $X[x,y]$ and $g(\cdot)$ a metric of similarity, then we assume that:
+Disparity estimation is based on the hypothesis that the local context of correspondent points is similar. If we define as $P_{n \times n}[x,y]$ the  $n \times n$ square patch centered at $X[x,y]$ and $g(\cdot)$ a metric of patch similarity, then we assume that:
 
 \begin{equation}
 \begin{gathered} \label{eq:similarity_hypothesis}
@@ -65,7 +65,7 @@ Disparity estimation is based on the hypothesis that the local context of corres
 \end{gathered}
 \end{equation}
 
-Although hypothesis \ref{eq:similarity_hypothesis} can be violated due to a variety of reasons (e.g. occlusions, uniform regions etc), choosing the \textit{suitable} patch size in each position increases significantly our chances. Since it is impossible to know a priori the ideal patch size per position, a naive solution would impose to predefine a set of different patch sizes, get the similarity scores for each one and choosing the most accurate prediction afterwards. This solution has a basic drawback; if we choose $g$ to be a machine learning method (e.g. cnn), a different network should be trained for each different patch size. For this reason, we choose to train a unique cnn that operates on a \textit{predefined} patch size, and apply it separately on a scale-space pyramid of the initial stereo pair. Our statement is that moving along coarser scales on the scale space pyramid, has a similar qualitative value with increasing the patch size in the initial stereo images. In figure \ref{fig:multiscale_importance_2D}, we design a simple artificial example to show the importance of choosing correctly the patch size and that we can obtain equivalently accurate comparisons if instead of changing the patch size, we change the scale of the image. 
+For hypothesis \ref{eq:similarity_hypothesis} to hold, we must choose carefully two critical factors that depend on the specific properties of the points under comparison. Firstly, we must select the patch size correctly (i.e. a textureless region requires a large patch size, whereas a region with many features and multiple-depth objects in the background requires a small patch). Secondly, we must select the scale of the image correctly, so that the similarity measure $g$ be able to detect and match the unique features inside the patch. Since it is impossible to know a priori the correct patch size and the correct processing scale for each image point, we choose to design a deep learning architecture that incorporates the machinery of multiscale analysis. In figure \ref{fig:multiscale_importance_2D}, we design a simple artificial example to show the importance of multiscale processing, by attempting to match patches with different properties (i.e. one scenario requires coarse-scale processing, whereas the other fine-scale). Finally, apart from tackling the aforementioned crucial questions successfully, the multiscale approach offers another attractive advantage; it leads to an agile CNN architecture that can be readjusted between efficiency and accuracy, at the inference phase. If we seek for efficiency, we can tune the network to operate at fewer scales and vice-versa if accuracy is the priority. This tuning can be done through hyperparameters, without the need to retrain the initial CNN.
 
 After, obtaining such multiscale similarity estimations, we implement a recursive $3D$ module for merging the different disparity estimations into a final prediction. In general, our cnn architecture follows the next to designing principles:
 
@@ -83,7 +83,7 @@ After, obtaining such multiscale similarity estimations, we implement a recursiv
     \vspace{-15pt}
 \end{subfigure}
 \begin{subfigure}[t]{0.53\textwidth}
-    \includegraphics[width=\textwidth]{paper/latex/figures/low_resolution_success_imL_fine.png}\\
+    \includegraphics[width=\textwidth]{paper/latex/figures/low_resolution_success_imL_fine.pdf}\\
     \vspace{-15pt}
 \end{subfigure}
 }
@@ -94,7 +94,7 @@ After, obtaining such multiscale similarity estimations, we implement a recursiv
     \vspace{-15pt}
 \end{subfigure}
 \begin{subfigure}[t]{0.53\textwidth}
-    \includegraphics[width=\textwidth]{paper/latex/figures/low_resolution_success_imR_fine.png}\\
+    \includegraphics[width=\textwidth]{paper/latex/figures/low_resolution_success_imR_fine.pdf}\\
     \vspace{-15pt}
 \end{subfigure}
 }
