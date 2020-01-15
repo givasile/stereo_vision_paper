@@ -1,5 +1,6 @@
 success_story = 'high';
 save_im = true;
+save_folder = 'C:\Users\vasil\stereo_vision\src\stereo_vision\paper\latex\figures\';
 rng(3);
 
 % texture helps higher resolutions
@@ -151,7 +152,7 @@ if strcmp(success_story, 'high')
     legend(ax2, {latex_expr(ps_a), latex_expr(ps_b), latex_expr(ps_a, down_rate_float)}, 'Interpreter', 'latex')
     
     if save_im
-        saveas(fig2, '/home/givasile/stereo_vision/paper/multiscale_importance_matlab/high_resolution_success_graph.png')
+        saveas(fig2, strcat(save_folder, 'high_resolution_success_graph.png'));
     end
     
     % imL fine scale
@@ -166,7 +167,7 @@ if strcmp(success_story, 'high')
     hold off;
     
     if save_im
-        saveas(fig3, '/home/givasile/stereo_vision/paper/multiscale_importance_matlab/high_resolution_success_imL_fine.png')
+        saveas(fig3, strcat(save_folder, 'high_resolution_success_imL_fine.png'));
     end
     
     % imL coarse scale
@@ -181,7 +182,7 @@ if strcmp(success_story, 'high')
     hold off;
     
     if save_im
-        saveas(fig4, '/home/givasile/stereo_vision/paper/multiscale_importance_matlab/high_resolution_success_imL_coarse.png')
+        saveas(fig4, strcat(save_folder, 'high_resolution_success_imL_coarse.png'));
     end
     
     % imR fine scale
@@ -196,7 +197,7 @@ if strcmp(success_story, 'high')
     hold off;
     
     if save_im
-        saveas(fig5, '/home/givasile/stereo_vision/paper/multiscale_importance_matlab/high_resolution_success_imR_fine.png')
+        saveas(fig5, strcat(save_folder, 'high_resolution_success_imR_fine.png'))
     end
     
     % imR coarse scale
@@ -211,7 +212,7 @@ if strcmp(success_story, 'high')
     hold off;
     
     if save_im
-        saveas(fig6, '/home/givasile/stereo_vision/paper/multiscale_importance_matlab/high_resolution_success_imR_coarse.png')        
+        saveas(fig6, strcat(save_folder, 'high_resolution_success_imR_coarse.png'));
     end
     
 elseif strcmp(success_story, 'low')
@@ -233,7 +234,7 @@ elseif strcmp(success_story, 'low')
     legend(ax2, {latex_expr(ps_a), latex_expr(ps_b), latex_expr(ps_a, down_rate_float)}, 'Interpreter', 'latex')
     
     if save_im
-        saveas(fig2, '/home/givasile/stereo_vision/paper/multiscale_importance_matlab/low_resolution_success_graph.png')
+        saveas(fig2, strcat(save_folder, 'low_resolution_success_graph.png'))
     end
     
     % imL fine scale
@@ -248,7 +249,7 @@ elseif strcmp(success_story, 'low')
     hold off;
     
     if save_im
-        saveas(fig3, '/home/givasile/stereo_vision/paper/multiscale_importance_matlab/low_resolution_success_imL_fine.png')
+        saveas(fig3, strcat(save_folder, 'low_resolution_success_imL_fine.png'))
     end
     
     % imL coarse scale
@@ -264,7 +265,7 @@ elseif strcmp(success_story, 'low')
 
     
     if save_im
-        saveas(fig4, '/home/givasile/stereo_vision/paper/multiscale_importance_matlab/low_resolution_success_imL_coarse.png')
+        saveas(fig4, strcat(save_folder, 'low_resolution_success_imL_coarse.png'))
     end
     
     % imR fine scale
@@ -280,7 +281,7 @@ elseif strcmp(success_story, 'low')
 
     
     if save_im
-        saveas(fig5, '/home/givasile/stereo_vision/paper/multiscale_importance_matlab/low_resolution_success_imR_fine.png')
+        saveas(fig5, strcat(save_folder, 'low_resolution_success_imR_fine.png'))
     end
     
     % imR coarse scale
@@ -295,7 +296,7 @@ elseif strcmp(success_story, 'low')
     hold off;
     
     if save_im
-        saveas(fig6, '/home/givasile/stereo_vision/paper/multiscale_importance_matlab/low_resolution_success_imR_coarse.png')        
+        saveas(fig6, strcat(save_folder, 'low_resolution_success_imR_coarse.png'))
     end
 end
 
