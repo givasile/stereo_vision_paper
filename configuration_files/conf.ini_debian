@@ -1,7 +1,7 @@
 [PATHS]
-parent_dir: /home/givaisile/stereo_vision/src/
-saved_models: /home/givaisile/stereo_vision/saved_models/
-common_datasets: /home/givaisile/stereo_vision/saved_models/common_datasets/
+parent_dir: /home/givasile/stereo_vision/src/
+saved_models: /home/givasile/stereo_vision/saved_models/
+common_datasets: /home/givasile/stereo_vision/saved_models/common_datasets/
 
 [DATASETS]
 kitti_2015: /media/Storage/datasets/stereo_vision/raw/KITTI_2015/
