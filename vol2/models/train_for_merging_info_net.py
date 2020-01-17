@@ -12,9 +12,9 @@ action = 'keep_training'
 assert action in ['from_scratch', 'keep_training', 'finetune']
 
 # directory to load_from
-experiment_n_load_from = 23  # directory to load_from
-experiment_n_save_to = 23  # directory to save_to
-chekpoint_n = 2  # which checkpoint to load weights/stats from
+experiment_n_load_from = 25  # directory to load_from
+experiment_n_save_to = 25  # directory to save_to
+chekpoint_n = 3  # which checkpoint to load weights/stats from
 get_common_dataset = False  # get_standart_dataset
 common_dataset_name = 'flying_tr_te'  # which standard dataset to load from
 
