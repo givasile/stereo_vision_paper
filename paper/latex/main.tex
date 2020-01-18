@@ -139,81 +139,95 @@ After, obtaining such multiscale similarity estimations, we implement a recursiv
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{Single-scale prediction}
+\subsection{MSNet architecture}
 
-In this section, we describe a simple cnn architecture for predicting disparity, respecting the stereo vision geometry particularities. In general, end-to-end techniques attempt to learn a direct mapping $\hat{Y} = f(X^L, X^R)$, for $\hat{Y}$ to be as close as possible to the ground truth disparity image $Y$. Taking advantage of basic stereo vision restrictions, this rather generic problem statement, can be divided into three subproblems:
+In this section, we describe the architecture of MSNet. MSNet comprises of specific subparts, each one with a specific role in the estimation of depth. We name as $f_*$ the parts that contain learnable parameters (i.e. CNN) and $g_*$ the parts without learned parts. For the best understanding of our description, it is crucial to pay attention to the table \ref{tab:entity_description} and to figure \ref{fig:cnn_architecture}.
 
-\begin{itemize}
-    \item Learning a method $f_1$ (2D cnn) for mapping every point $p$ of raw images $X^L, X^R$ to a descriptor $\vec{k} \in R^K$, creating descriptor images $X^L_{desc}, X^R_{desc}$. This feature space representation enables incorporating information from local context for creating robust descriptors, on which forthcoming similarity comparisons will be based upon.
-    
-    \item Design a method $g_1$ for forming the comparison volume $C$. This step is usually hand-crafted and does not contain a learnable method. In our proposed method, instead of just concatenating the descriptors of compared points, we design a more concise method $g_1$, avoiding the redundancy introduced by simple concatenation. We explain in depth our method at section \ref{sec:comparison_volume}.
-    
-    \item Learning a method $f_2$ (3d cnn) for predicting the disparity image $\hat{D}$. We follow the methodology proposed in \cite{Kendall2017End-to-EndRegression}, where $f_2$ learns a mapping from the comparison volume $C$ to the similarity volume $S$ through a $3D$ convolutional network. The similarity volume stores a probability $p \in [0,1] $ for each correspondence $S[d,x,y] = p$. Afterwards, a $g_2=softargmax$ operator applied along $d$ dimension, is used for obtaining the final disparity prediction.
-\end{itemize}
+\subsubsection{Downscaling stereo pair - $g_1$}
 
-Combining the aforementioned parts, we create the following cnn architecture which can be trained end-to-end:
+$g_1^t : \mathbb{R}^{H \times W} \rightarrow \mathbb{R}^{\sfrac{H}{t} \times \sfrac{W}{t}}$ creates a downscaled stereo pair, where $t$ is the downscaling factor. 
 
-\begin{equation} \label{eq:single_scale_architecture}
-    \hat{Y} = f(X^L, X^R) = g_2 ( f_2 ( g_1 ( f_1(X^L), f_1(X^R) ) ) )
+$$(X^{L,t}, X^{R,t}) = (g_1^t(X^L), g_1^t(X^R)) $$
+
+Specifically, $g_1^t$ convolves the stereo image $X$ with a gaussian kernel 
+
+$$k(x, y, \sigma) = \frac{1}{2\pi\sigma^2} \cdot e^{\sfrac{-(x^2 + y^2)}{2\sigma^2}}$$ of size $N = 2 * \lceil 4*\sigma + 0.5 \rceil - 1, \sigma = \sfrac{t}{3}$ and afterwards applies bilinear downsampling. In our work, the scales $t$ are set to be powers of 2 (i.e $ T = \{ 2^2, 2^3, 2^4, 2^5 \}$) but in general they can be defined to be any positive number. 
+
+
+\subsubsection{Feature extraction - $f_1$}
+
+The module $f_1: \mathbb{R}^{H \times W \times 3} \rightarrow \mathbb{R}^{H \times W \times K}$ is the CNN responsible for extracting local features for each point of the stereo images. This process is done separately for each stereo image and each scale.
+
+$$ (X^{L,t}_{desc}, X^{R,t}_{desc}) = (f_1(X^{L,t}), f_1(X^{R, t})), \forall t$$
+
+\subsubsection{Comparison volume - $g_2$}
+
+The comparison volume $g_2: (\mathbb{R}^{H \times W \times K}, \mathbb{R}^{H \times W \times K}) \rightarrow \mathbb{R}^{D \times H \times W \times K'}$ is used as a helping step for zipping comparison information into a 3D tensor. Normally, the comparison volume is formed by simply concatenating the descriptors for each disparity position. This approach introduces significant redundancy; the comparison volume with dimensionality $D \times H \times W \times 2K$ is builded by repeting  $H \times W \times 2K$ unique values. For keeping the memory space and reduce redundancy, we design a new comparison metric between two scalar features:
+
+$$ g_2: \mathbb{R}^2 \rightarrow \mathbb{R}: g_2(a_1, a_2) = \frac{|a_1| + |a_2|}{2} \cdot e^{-|a_1 - a_2|} $$
+
+The second term $e^{-|a_1 - a_2|} \in (0,1]$ measures whether the specific feature is found in both image patches and the first term $\frac{|a_1| + |a_2|}{2}$ whether the feature is strong in each patch (i.e. $0$ is the weakest value for the feature). With this formulation, we avoid redundancy, since all values entering the comparison volume indicate whether a specific feature has been located in both patches under comparison.
+Finally, we concatenate the raw left image $X^L$ along the axis $d$ of the comparison volume, so to save the local context information for the forthcoming layers.
+
+\begin{equation}
+\begin{gathered} \label{eq:comparison_volume}
+    C^t[d, x, y, i] = g_2( X^{L, t}_{desc}[x,y,i], X^{R, t}_{desc}[x-d,y, i]) \\
+    C^t \leftarrow X^{L, t} \oplus C^t
+\end{gathered}
 \end{equation}
 
-Equation \ref{eq:single_scale_architecture} implements the prediction mechanism at the highest resolution of the input images. Instead, we could apply the same procedure at any coarser scale by intervening two simple layers:
-
-\begin{itemize}
-    \item A downscaling layer $L_1^t: \mathbb{R}^{H \times W} \rightarrow \mathbb{R}^{\sfrac{H}{t} \times \sfrac{W}{t}}$, where $t$ represents the downsampling factor. $L_1^t$ applies sequentially a gaussian kernel $k(x, y, \sigma) = \frac{1}{2\pi\sigma^2} \cdot e^{\sfrac{-(x^2 + y^2)}{2\sigma^2}}$, where $\sigma = \sfrac{t}{3}$ and a bilinear downsampling layer.
-    
-    \item A trilinear upsampling mechanism $L_2^t: \mathbb{R}^{D \times H \times W} \rightarrow \mathbb{R}^{tD \times tH \times tW}$, where $t$ represents the upsampling factor.
-\end{itemize}
-
-Hence, intervening those two simple layers we enforce the procedure \ref{eq:single_scale_architecture} to take place at specific scale $t$:
-
-\begin{equation} \label{eq:single_scale_archtecture_at_sigma}
-    \hat{Y}^t = f^t(X^L, X^R) = g_2( L_2^t (f_2 ( g_1 ( f_1(L_1^t(X^L)), f_1(L_1^t(X^R)) ) ) ) )
-\end{equation}
+\subsubsection{Comparison volume processing - $f_2$}
 
 
-\subsection{Multi-scale fusion}
+\subsubsection{Multiscale fusion - $f_3$}
 
-Exploiting information from different scales is the crucial task of our proposed method. As mentioned, there are regions of the image where coarser scales provide more accurate estimations and vice-versa. Let's define a coarse scale comparison volume $C^{t_2}$ and a corresponding fine scale $C^{t_1}$. Our target is to learn a method that can locate the trustable information from the different scales and incorporate it to produce a mixed scale volume $C^{t_2, t_1}$. Our intuition for designing this learning structure, follows the following schema; If both scales vote for the same disparity estimation, this estimation must be strengthened. If a conflict is found, the network should decide which prediction to follow (fine or coarse) by appraising the robustness of each disparity curve. Finally, if neither prediction is robust this info must be imprinted to the produced tensor.
+This module is responsible for exploiting information from different scales and merge it in a single comparison volume. The procedure takes place recursively in pairs of two, from coarse to fine scales; a coarse (low resolution) scale is getting merged with a fine (higher resolution) until the highest resolution is reached. The goal of the learnable module $f_3$ is to understand which scale includes the most reliable information and carry it forward to the next level. After multiscale fusion has been completed, the output tensor $Q^{\{t_0, t_1, \cdot \cdot \cdot, t_n\}}$, which has the same dimensions as $Q^{t_0}$, contains accumulated information from all single-scale tensors. 
 
-The finer scale volume $C^{t_1}$ passes through the $3D$ cnn $f_3: \mathbb{R}^{D \times H \times W \times K_1} \rightarrow  \mathbb{R}^{D \times H \times W \times K_2}$, which is responsible for preparing it for concatenation. The coarser scale volume $C_2$ is upsampled through a trillinear upsampling layer $L_2^{\sfrac{t_2}{t_1}}$ and it is concatenated with $C^{t_1}$. Finally, another $3D$ cnn $f_4: \mathbb{R}^{D \times H \times W \times 2K_2} \rightarrow  \mathbb{R}^{D \times H \times W \times K_2}$ gets the concatenated  projects it to initial input space. Equation \ref{eq:two_scale_fusion} represents the basic construction block of the proposed method and Algorithm \ref{alg:multi_scale_fusion} the whole repetitive procedure for combining information for all scales.
+Apart from the learnable $f_3$ module, a trilinear upsampling layer 
+
+$$g_3^t: \mathbb{R}^{D \times H \times W \times K} \rightarrow \mathbb{R}^{tD \times tH \times tW \times K}$$ where $t$ represents the upsampling factor, is being used. 
+
+Equation \ref{eq:two_scale_fusion} explains how the scale $i$ is being adopted in the multiscale fusion procedure and the end-to-end explanation of the algorithm is given in \ref{alg:multi_scale_fusion}:
 
 \begin{equation} \label{eq:two_scale_fusion}
-C^{ \{ t_n, ..., t_{i+1}, t_{i} \} } = f_4(L_2^{\sfrac{t_{i+1}}{t_i} }(C^{ \{ t_n, ..., t_{i+1} \} }), f_3(C^{t_i}) )
+Q^{ \{ t_i, \cdot \cdot \cdot, t_{n} \} } = f_3(Q^{t_i} \oplus g_3^{\sfrac{t_i}{t_{i-1}} }(Q^{ \{ t_{i-1}, \cdot \cdot \cdot, t_n \} }))
 \end{equation}
 
 
 \begin{algorithm}
 \caption{Multi-scale fusion}\label{alg:multi_scale_fusion}
 \begin{algorithmic}[1]
-\Procedure{multi scale fusion}{$ C^{t_n}, \cdot \cdot \cdot, C^{t_0} $}
-\State $C_1 \gets f_3(C^{t_n})$ \Comment{Init coarse scale volume}
+\Procedure{multi scale fusion}{$ Q^{t_0}, Q^{t_1}, \cdot \cdot \cdot, Q^{t_n} $} $\rightarrow Q^{\{t_0, t_1, \cdot \cdot \cdot, t_n\}}$ 
+\State $Q \gets Q^{t_n}$ \Comment{Initialize}
 \For { \texttt{i=n-1;-1;0} }
-\State $C_1 \gets L_2^{\sfrac{ t_{i+1} }{ t_i } }(C_1)$ \Comment{3D Upsampling}
-\State $C_2 \gets f_3(C^{t_i})$ \Comment{Prepare finer scale volume}
-\State $C_1 \gets f_4(C_1, C_2)$ \Comment{Concatenate and project to input space}
+\State $Q \gets g_3^{\sfrac{ t_{i+1} }{ t_i } }(Q)$ \Comment{3D Upsampling}
+\State $Q \gets Q^{t_i} \oplus Q$ \Comment{Concatenation}
+\State $Q \gets f_3(Q)$ \Comment{Merge information}
 \EndFor
-\State \Return $C_1$
+\State \Return $Q^{\{t_0, t_1, \cdot \cdot \cdot, t_n\}} \gets Q$ \Comment{Result}
 \EndProcedure
 \end{algorithmic}
 \end{algorithm}
 
 
-\subsection{Comparison volume} \label{sec:comparison_volume}
+\subsubsection{Final prediction - $f_4$ and softargmax}
 
-The comparison volume is used as a helping step for zipping comparison information into a 3D tensor $\mathbb{R}^{D \times H \times W} \rightarrow \mathbb{R}^K$. Normally, the comparison volume is formed by simply concatenating the descriptors compared points $C[d, x, y]  = X^L_{desc}(x,y) \oplus  X^R_{desc}(x-d,y)$. Although this method retains all descriptors intact, it introduces significant redundancy; rearranges $H \times W \times K$ unique values into an object of $D \times H \times Y \times 2K$ total values. For keeping the computational complexity low, we compute similarity measure between each corresponding value of the descriptors under comparison. Afterwards, we concatenate the initial left image $X^L$ along axis $d$ for incorporating the local context information. We symbolize the whole procedure as $g_1$.
+The module $f_4: \mathbb{R}^{D \times H \times W \times K} \rightarrow \mathbb{R}^{D \times H \times W}$ is responsible for predicting a vector of probabilities for each possible disparity:
 
-\begin{equation}
-\begin{gathered} \label{eq:comparison_volume}
-    g: \mathbb{R}^2 \rightarrow \mathbb{R}: g(a_1, a_2) = \frac{|a_1 + a_2|}{2} \cdot e^{-|a_1 - a_2|} \\
-    C_1^t[d, x, y, i] = g( X^{L, t}_{desc}[x,y,i], X^{R, t}_{desc}[x-d,y, i]) \\
-    C^t = X^{L, t} \oplus C_1^t
-\end{gathered}
-\end{equation}
+$$S^{\{ t_0, \cdot \cdot \cdot, t_n \}} = f_4(Q^{\{t_0, t_1, \cdot \cdot \cdot, t_n\}})$$
+
+A softmax operator applied alond the disparity dimension produces the final prediction:
+
+$$Y^{\{ t_0, \cdot \cdot \cdot, t_n \}} = softargmax_d(S^{\{ t_0, \cdot \cdot \cdot, t_n \}})$$
+
+\subsubsection{Putting all pieces together}
+
+MSNet comprises of 4 CNN modules - $f_1, f_2, f_3, f_4$, which are repeated for extracting information at multiple scales and then combine it for producing a single prediction image. At training time, we fix the list of scales to $T = \{ 2^0, 2^1, 2^2, 2^3 \}$. At test time, this list can be changed depending on the specific application needs. For example, if the application lacks computational resources and targets to a quick and rough depth estimation, the scale-list can be set to $T = \{ 16, 32, 64\}$. Vice-versa, if the application needs accuracy and high-resolution detail the list can be set to $T = \{1, 2, 4, 8 \}$.
+
 
 \subsection{Cnn architectures}
 
-In this section we present the specific cnn architectures used as the learnable parts of our model (i.e. functions $f_1, f_2, f_3, f_4$).
+In this section we present the specific cnn architectures used as the learnable parts of our model.
 
 \begin{figure}
     \centering
@@ -224,55 +238,54 @@ In this section we present the specific cnn architectures used as the learnable 
 
 \begin{table}[]
     \centering
-    \begin{tabular}{ l|c|c|c }
-    Name & Symbol & Set & Formula \rule{0pt}{2ex}\\
+    \begin{tabular}{ l|c|c }
+    Description & Symbol & Set \rule{0pt}{2ex}\\
     
     \hline
-    \multicolumn{4}{c}{ \textbf{Definitions} } \rule{0pt}{2.4ex}\\
+    \multicolumn{3}{c}{ \textbf{Definitions} } \rule{0pt}{2.4ex}\\
     \hline
     
-    Raw image & $X^L, X^R$ & $\mathbb{R}^{H \times W \times 3}$ & -  \rule{0pt}{2.5ex} \\
+    Raw image & $X^L, X^R$ & $\mathbb{R}^{H \times W \times 3}$ \rule{0pt}{2.5ex} \\
     
-    Ground truth & $Y$ & $\mathbb{R}^{H \times W}$ & - \rule{0pt}{2.5ex} \\
-    
-    \hline
-    \multicolumn{4}{c}{ \textbf{Single-Scale 2D Processing} } \rule{0pt}{2.4ex}\\
-    \hline
-    
-    Downsampled image & $X^{L,t}, X^{R, t}$ & $\mathbb{R}^{\sfrac{H}{t} \times \sfrac{W}{t} \times 3}$ & $L_1^t(X^L), L_1^t(X^R)$  \rule{0pt}{3ex} \\
-    
-    Descriptor image & $X^{L,t}_{desc}, X^{R, t}_{desc}$ & $\mathbb{R}^{\sfrac{H}{t} \times \sfrac{W}{t} \times K}$ & $f_1(X^{L,t}), f_1(X^{R, t})$  \rule{0pt}{3.5ex} \rule[-1.3ex]{0pt}{0pt}\\
+    Ground truth & $Y$ & $\mathbb{R}^{H \times W}$ \rule{0pt}{2.5ex} \\
     
     \hline
-    \multicolumn{4}{c}{ \textbf{Single-Scale 3D Processing} } \rule{0pt}{2.4ex}\\
+    \multicolumn{3}{c}{ \textbf{Single-Scale 2D Processing} } \rule{0pt}{2.4ex}\\
     \hline
     
-    Comparison volume & $C^{t}$ & $ \mathbb{R}^{ \sfrac{D}{t} \times \sfrac{H}{t} \times \sfrac{W}{t} \times K' }  $  & $g_1(X^{L,t}_{desc}, X^{R, t}_{desc}, X^{L,t})$ \rule{0pt}{3ex} \\
+    Downscaled image & $X^{L,t}, X^{R, t}$ & $\mathbb{R}^{\sfrac{H}{t} \times \sfrac{W}{t} \times 3}$ \rule{0pt}{3ex} \\
     
-    Similarity volume & $S^{t}$ & $ \mathbb{R}^{ \sfrac{D}{t} \times \sfrac{H}{t} \times \sfrac{W}{t}} $  & $f_2(C^{t})$ \rule{0pt}{3.5ex} \\
-    
-    Prediction image & $\hat{Y}^{t}$ & $\mathbb{R}^{H \times W}$ & $ g_2(t_2^{t}(S^{t}))$ \rule{0pt}{3.5ex} \\
+    Descriptor image at scale $t$ & $X^{L,t}_{desc}, X^{R, t}_{desc}$ & $\mathbb{R}^{\sfrac{H}{t} \times \sfrac{W}{t} \times K}$ \rule{0pt}{3.5ex} \rule[-1.3ex]{0pt}{0pt}\\
     
     \hline
-    \multicolumn{4}{c}{ \textbf{Multi-Scale 3D Processing} } \rule{0pt}{2.4ex} \\
+    \multicolumn{3}{c}{ \textbf{Single-Scale 3D Processing} } \rule{0pt}{2.4ex}\\
     \hline
     
-    Comparison volume & $C^{ \{ t_n, ... , t_0 \} }$ & $ \mathbb{R}^{ \sfrac{D}{t_0} \times \sfrac{H}{t_0} \times \sfrac{W}{t_0} \times K' }  $  & $\text{MultiScaleFusion}(C^{t_n}, ..., C^{t_0})$ \rule{0pt}{3ex} \\
+    Comparison volume & $C^{t}$ & $ \mathbb{R}^{ \sfrac{D}{t} \times \sfrac{H}{t} \times \sfrac{W}{t} \times K } $ \rule{0pt}{3ex} \\
     
-    Similarity volume & $S^{ \{ t_n, ... , t_0 \} }$ & $ \mathbb{R}^{ \sfrac{D}{t_0} \times \sfrac{H}{t_0} \times \sfrac{W}{t_0}} $  & $f_2(C^{ \{ t_n, ... , t_0 \} })$ \rule{0pt}{3.5ex} \\
+    Processed comparison volume & $Q^{t}$ & $ \mathbb{R}^{ \sfrac{D}{t} \times \sfrac{H}{t} \times \sfrac{W}{t} \times K } $ \rule{0pt}{3ex} \\
     
-    Prediction image & $\hat{Y}^{ \{ t_n, ... , t_0 \} }$ & $\mathbb{R}^{ H \times W}$ & $g_2 (L_2^{t_0}(S^{ \{ t_n, ... , t_0 \} }))$ \rule{0pt}{3.5ex} \\
+    Similarity volume & $S^{t}$ & $ \mathbb{R}^{ \sfrac{D}{t} \times \sfrac{H}{t} \times \sfrac{W}{t}} $  \rule{0pt}{3.5ex} \\
+    
+    Prediction image & $\hat{Y}^{t}$ & $\mathbb{R}^{H \times W}$ \rule{0pt}{3.5ex} \\
+    
+    \hline
+    \multicolumn{3}{c}{ \textbf{Multi-Scale 3D Processing} } \rule{0pt}{2.4ex} \\
+    \hline
+    
+    Comparison volume & $C^{ \{ t_0, ... , t_n \} }$ & $ \mathbb{R}^{ \sfrac{D}{t_0} \times \sfrac{H}{t_0} \times \sfrac{W}{t_0} \times K }  $ \rule{0pt}{3ex} \\
+    
+    Processed comparison volume & $Q^{ \{ t_0, ... , t_n \} }$ & $ \mathbb{R}^{ \sfrac{D}{t_0} \times \sfrac{H}{t_0} \times \sfrac{W}{t_0} \times K }  $ \rule{0pt}{3ex} \\
+    
+    Similarity volume & $S^{ \{ t_0, ... , t_n \} }$ & $ \mathbb{R}^{ \sfrac{D}{t_0} \times \sfrac{H}{t_0} \times \sfrac{W}{t_0}} $ \rule{0pt}{3.5ex} \\
+    
+    Prediction image & $\hat{Y}^{ \{ t_0, ... , t_n \} }$ & $\mathbb{R}^{ H \times W}$ \rule{0pt}{3.5ex} \\
     \hline
     \end{tabular}
-    \caption{Description of all tensors involved in the proposed method}
+    \caption{Description of all tensors involved in MSNet. All tensors follow the dimensions defined by their scale, apart from the final prediction image $\hat{Y}$. In this case, the scale (or list of scales) declares the processing scales used in the prediction. The final prediction shares always the same shape with the raw images.}
     \label{tab:entity_description}
 \end{table}
 
-\subsection{Weight sharing}
-
-Our method is based on some constructive blocks that can be combined in any arbitrary combination of scales. This specification provides some scalability to the network which can thought as a tweaking capability between conflicting characteristics. If one targets for accuracy, he can combine many different scales of processing. On the other hand, if one targets for faster processing times, has less computational resources or does not care for complex details in the disparity prediction, he may choose less and coarser points in the scale space.
-
-In the experimental part, we show that repeating the same constructive blocks, which can be thought as weight sharing between some layers, doesn't decrease network's expressiveness.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Experimental evaluation}
