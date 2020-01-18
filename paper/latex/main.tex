@@ -16,6 +16,7 @@
 \usepackage{amsfonts}
 \usepackage{xfrac}
 
+\usepackage{svg}
 \usepackage{csvsimple}
 
 \usepackage{algorithm}
@@ -231,7 +232,7 @@ In this section we present the specific cnn architectures used as the learnable 
 
 \begin{figure}
     \centering
-    \includegraphics[width = \textwidth]{paper/latex/figures/cnn_architecture.png}
+    \includegraphics[width = \textwidth]{paper/latex/figures/cnn_architecture.svg}
     \caption{Scale fusion network overview. Its main constructive blocks are the horizontal pipelines (green colour) representing end-to-end predictions at specific scale $\sigma$ and the vertical pipelines (grey colour) representing the pair-scales fusion at similarity matrix level. The red-coloured blocks are the learned parts of our architecture, while the yellow coloured ones are hand-crafted layers.}
     \label{fig:cnn_architecture}
 \end{figure}
