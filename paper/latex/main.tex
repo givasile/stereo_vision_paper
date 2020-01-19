@@ -1,9 +1,9 @@
 \documentclass[10pt]{article}
 \usepackage[utf8]{inputenc}
 
-\title{Stereo Vision}
-\author{Vasilis Gkolemis}
-\date{November 2018}
+\title{Multi-scale analysis for depth estimation}
+\author{Vasileios Gkolemis, Anastasios Delopoulos}
+\date{January 2020}
 
 % \usepackage{geometry}
 %  \geometry{
@@ -293,6 +293,8 @@ In this section we present the specific cnn architectures used as the learnable 
 
 In this section we provide some quantitative and qualitative results of our proposed methods on the large synthetic SceneFlow dataset. In section \ref{sec:4_1}, we show  how the multi-scale fusion algorithm adopts progressively detailed information, as it moves to fine scales. In section \ref{sec:4_2}, we compare the proposed network to the state-of-the-art methods, at SceneFlow dataset. In section ..., we compare the proposed network to some more generic architecture, showing that enforcing the multi-scale process leads to better results even with less trainable parameters. In section ..., we compare the proposed network to the ones following the same architecture without weight sharing.
 
+
+
 \subsection{Multi-Scale fusion analysis} \label{sec:4_1}
 
 In figure \ref{fig:multiscale_importance}, we show how our 3D cnn network has learned incorporating and progressively adopting fine scale predictions. We choose two points with different features; the yellow-box region contains a thin object with texture, which is appropriate for small and high-resolution patch. On the other hand, the orange-box contains a background wall with repetitive pattern, which needs a broader patch containing features from neighbourhood objects. In the orange-box scenario a small, high-resolution patch would lead to a confusion with each neighboor points. For confirming this hypothesis, we initially tune the network for single-scale predictions (i.e. right column in the graph). We can confirm that fine scale works well in the yellow-box and coarse scale in the orange-box region. On the left column, we observe the corresponding results, when the network is set to multi-scale prediction; it achieves accurate predictions in both cases, since it has learned to detect the appropriate scale and rely its prediction on it.
@@ -475,27 +477,35 @@ In figure \ref{fig:EMAPs} we present the predictions of the network along with t
 
 \subsection{SceneFlow benchmark} \label{sec:4_2}
 
-\subsubsection{Comparing MSNet with more generic architecture}
+\subsubsection{Using multi-scale processing implicitly vs explicitly}
 
+In this section, we want to test the benefit of enforcing multi-scale processing explicitly. For this reason, we design 4 CNN architectures that follow the MSNet designing principles, but without enforcing multi-scale processing explicitly; OneRes operates only on the initial resolution, MRes2d uses the hourglass model (i.e. downsampling and upsampling) only in the 2D-processing part, MRes3d uses the hourglass model only in the 3D-processing part and finally MRes2d3d in both the 2D and 3D processing part. The hourglass architecture allows by design implicit multi-scale processing. For each of the 4 CNNs we create two versions; small (S) has the same number of free parameters as MSNet and big (B) which has as many parameters as the GPU memory allows.
+
+In figure \ref{fig:mae_SFNvsSFN_free_weights} we observe that MSNet outperforms both versions of the generic architectures, which is a crucial indicator that enforcing multi-scale processing explicitly is beneficial for depth estimation. More specifically, big (B) networks outperform small (S) ones and using the hourglass architecture in the 3D processing part (MRes3d) gives the best performance.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{paper/latex/figures/freiburg_msnet_vs_monolithic_mae.pdf}
+    \caption{MSNet comparison with generic architectures}
+    \label{fig:mae_SFNvsGenericNets}
+\end{figure}
 
 \subsubsection{Comparing MSNet with networks that do not share weights}
 
-\subsubsection{Compare MSNet vs state-of-the-art networks}
+In this section, we 
 
-\subsubsection{MSNet evaluation on smaller training set}
-
-\subsubsection{MSNet evaluation on different scale combinations}
-
-
-In this section, we evaluate our network on the SceneFlow dataset. The evaluation process is undertaken at three separate parts, each one benchmarking a different perspective.
-
-Firstly, we would like to check the benefit of enforcing explicitly the multiscale processing, instead of implementing a generic cnn architecture. For this purpose, we design 4 cnn architectures, following the designing principles of \ref{eq:single_scale_architecture}, changing only the specific layers that constitute $f_1$ and $f_2$. Specifically, the "OneRes" network's $f_1$ and $f_2$ consist of a pile of 2d and 3d residual blocks correspondingly. In "MRes2d", $f_1$ average pooling along with 2d upsampling layers have been added between 2d residual blocks, creating an stacked hourglass (encoding-decoding) architecture. In "MRes3d", the equivalent procedure at the 3d processing level, forms $f_2$. Finally, at "MRes2d3d", both $f_1$ and $f_2$ follow the encoder-decoder architecture. We implemented such models, since encoder-decoder architecture is a basic strategy that enables the network to adopt multiscale capabilities internally, through the training procedure. At table \ref{tab:results} and at graph \ref{fig:mae_SFNvsGenericNets} we observe that enforcing multiscale analysis leads to better accuracy, even with much less parameters.
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\textwidth]{paper/latex/figures/freiburg_msnet_vs_free_weights_mae.pdf}
+    \caption{Text}
+    \label{fig:mae_SFNvsSFN_free_weights}
+\end{figure}
 
 Secondly, we question whether using the same constructive blocks $f_1$, $f_2$, $f_3$, $f_4$ repetitively between different scales lead to better results that leaving all model weights free along training. We must notice here that freeing the weights cancels the networks scalability, since the processing scales must be predefined and be consistent between training and test phase. From the results at table \ref{tab:results} and figure \ref{fig:mae_SFNvsSFN_free_weights} we can extract two conclusions; Firstly, training the network $f_1$ once for all scales leads to an optimal solution. Seconly, at the 3d level, repeating the building block $f_2$ and $f_3$ through MultiScaleFusion algorithm \ref{alg:multi_scale_fusion} leads to suboptimal solution. Keeping the same backbone architecture, with free weights between scales, provides better accuracy in the cost of $4x$ parameters and the cancelling of scalability.
 
-Finally, we compare our network with the SoA models. In table \ref{tab:results}, it is shown that MSNet and MSNetFree3d set a new state-of-the-art performance. MSNet, specifically, the SoA performance even though it is much lighter network than those presented in previous works.
+\subsubsection{Compare MSNet vs state-of-the-art networks}
 
-In figure \ref{fig:mae_SFNvsGenericNets}, we evaluate the mean average end point error in  
+Finally, we compare our network with the SoA models. In table \ref{tab:results}, it is shown that MSNet and MSNetFree3d set a new state-of-the-art performance. MSNet, specifically, the SoA performance even though it is much lighter network than those presented in previous works.
 
 \begin{table}[]
     \centering
@@ -535,23 +545,37 @@ In figure \ref{fig:mae_SFNvsGenericNets}, we evaluate the mean average end point
     \caption{Model comparison on SceneFlow dataset}
     \label{tab:results}
 \end{table}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{MSNet evaluation on smaller training set}
+
+In figure \ref{fig:msnet_smaller_tr_set}, it is shown how MSNet observes when trained on a smaller percentage of the training set. As expected, the accuracy increases as the model observes more training data.
 
 \begin{figure}
     \centering
-    \includegraphics[width=\textwidth]{paper/latex/figures/freiburg_msnet_vs_monolithic_mae.pdf}
-    \caption{aek}
-    \label{fig:mae_SFNvsGenericNets}
-\end{figure}
+    \includegraphics[width=\textwidth]{paper/latex/figures/freiburg_msnet_mae_smaller_training_set.pdf}
+    \caption{Caption}
+    \label{fig:msnet_smaller_tr_set}
+\end{figure}{}
 
+\subsubsection{MSNet evaluation on different scale combinations}
+
+In figure \ref{fig:msnet_scales_evaluation}, we evaluate MSNet under different scale combinations. We observe that not only error in terms of $\mu$ absolute error and PCG error decreases as we add more scales, but also the standard deviation $\sigma$. This indicates that our network becomes more robust by operating in more scales. We also observe that adding coarse scales increases the robustness, even though the accuracy may be worse; for example $T=\{ 8 \}$ is better than $ T = \{ 16 \}$ in terms of accuracy (i.e. smaller $\mu$ absolute error) but $ T = \{ 16 \}$ is more robust (i.e. smaller $\sigma$). 
 
 \begin{figure}
     \centering
-    \includegraphics[width=\textwidth]{paper/latex/figures/freiburg_msnet_vs_free_weights_mae.pdf}
-    \caption{Text}
-    \label{fig:mae_SFNvsSFN_free_weights}
+    \includegraphics[width=\textwidth]{paper/latex/figures/msnet_scales_evaluation.pdf}
+    \caption{MSNet accuracy for different scale combinations. On the x-axis, there are the different scale combinations (i.e. the blue area contains single-scale set-ups, the green area two-scale, the purple area three-scale and the orange area the four-scale combination that was used in the training phase). On the first row we observe the $\mu$ and $\sigma$ of the absolute end-point error and on the second row the $\mu$ and $\sigma$ of the percentage of points with end-point error over 3 pixel.}
+    \label{fig:msnet_scales_evaluation}
 \end{figure}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Conclusions}
