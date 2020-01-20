@@ -3,8 +3,6 @@
 
 \documentclass[runningheads]{llncs}
 \usepackage{graphicx}
-\usepackage{caption}
-\usepackage{subcaption}
 
 \usepackage{amsmath,amssymb} % define this before the line numbering.
 \usepackage{mathtools}
@@ -24,7 +22,7 @@
 \mainmatter
 \def\ECCV16SubNumber{***}  % Insert your submission number here
 
-\title{Multi-scale analysis for depth estimation} % Replace with your title
+\title{Incorporating Multi-Scale Analysis For Depth Estimation} % Replace with your title
 
 \titlerunning{ECCV-16 submission ID \ECCV16SubNumber}
 
@@ -37,15 +35,14 @@
 \maketitle
 
 \begin{abstract}
-The abstract should summarize the contents of the paper. LNCS guidelines
-indicate it should be at least 70 and at most 150 words. It should be set in 9-point
-font size and should be inset 1.0~cm from the right and left margins.
-\dots
-\keywords{We would like to encourage you to list your keywords within
-the abstract section}
+Deep convolutional neural networks exhibit exceptional performance in predicting depth from stereo images. However, in most cases, they suffer from two fundamental problems (a) they consume extraordinary computational power (clusters of GPUs) even for predicting a single depth image (b) their memory and computational demands are set from the training phase, so they cannot be altered at test time according to the capacities of each application
+For confronting these problems, we propose a scalable CNN architecture (MSNet) that adjusts to the specific requirements on-demand; can reduce its computational cost with some accuracy reduction and vice-versa. This preference for accuracy or efficiency is determined at test time, without any need for retraining. For achieving this scalability,  we adopted the basic ideas of scale-space theory, and we adjusted them into the MSNet architecture.
+Finally, we compare MSNet to the state-of-the-art methods in the SceneFlow dataset, exhibiting challenging performance, using considerably less learnable parameters. 
+
+\keywords{Depth Estimation, Stereo Vision, Deep Learning, Multi-Scale Processing}
 \end{abstract}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Introduction}
 
 Stereo vision forms a particular case of the general 3D reconstruction problem. Stereo cameras share the same orientation while their centre is displaced horizontally by a distance $B$. The following relation expresses stereo vision's 3D geometry:
@@ -56,7 +53,7 @@ z = f\frac{B}{d}
 
 where $z$ is the distance from the camera level (depth), $f$ is the focal length of the camera and $d$ is the disparity; the horizontal difference between the object's projection in each of the stereo cameras. Let's define the stereo pair as $X = (X^L, X^R)$. Finding all correspondences $X^L(x,y) \leftrightarrow X^R(x-d, y), \forall (x,y)$ reveals the disparity image $Y$, which is the target of the problem.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Related Work}
 
 Reconstructing the three dimensional geometry from a set of $2D$ images is a core problem of computer vision. Stereo reconstruction is a predominant technique of the aforementioned domain and has been heavily studied over years \cite{Barnard1982ComputationalStereo},\cite{Brown2003}. Scharstein and Szeliski \cite{Scharstein2001AAlgorithms} propose a general taxonomy framework for describing and analysing any stereo vision algorithm in four steps: matching cost computation, cost aggregation, disparity computation/optimisation and disparity refinement.
@@ -69,8 +66,7 @@ Deep convolutional networks show great success on stereo vision problems. Intial
 
 Shaked and Wolf [12] introduce an initial disparity prediction network pooling global information from cost volume
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Multiscale analysis}
 
 Disparity estimation is based on the hypothesis that the local context of correspondent points is similar. If we define as $P_{n \times n}[x,y]$ the  $n \times n$ square patch centered at $X[x,y]$ and $g(\cdot)$ a metric of patch similarity, then we assume that:
@@ -91,69 +87,25 @@ After, obtaining such multiscale similarity estimations, we implement a recursiv
     \item Merges different comparison scales, adopting the one with the most accurate info
 \end{itemize}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%% Multiscale 2d importance %%%%%%%%%%%%%%%%%%%%%%%%
-\begin{figure*}[t]
-\makebox[\textwidth][c]{
-\begin{subfigure}[t]{0.53\textwidth}
-    \includegraphics[width=\textwidth]{figures/high_resolution_success_imL_fine.png}
-    \vspace{-15pt}
-\end{subfigure}
-\begin{subfigure}[t]{0.53\textwidth}
-    \includegraphics[width=\textwidth]{figures/low_resolution_success_imL_fine.png}\\
-    \vspace{-15pt}
-\end{subfigure}
-}
+\begin{figure}[t]
+    \begin{center}
+        \includegraphics[width=0.49\textwidth]{figures/high_resolution_success_imL_fine.png}
+        \includegraphics[width=0.49\textwidth]{figures/low_resolution_success_imL_fine.png}\\
+        \includegraphics[width=0.49\textwidth]{figures/high_resolution_success_imR_fine.png}
+        \includegraphics[width=0.49\textwidth]{figures/low_resolution_success_imR_fine.png}\\
+        \includegraphics[width=0.49\textwidth]{figures/high_resolution_success_imL_coarse.png}
+        \includegraphics[width=0.49\textwidth]{figures/low_resolution_success_imL_coarse.png}\\
+        \includegraphics[width=0.49\textwidth]{figures/high_resolution_success_imR_coarse.png}
+        \includegraphics[width=0.49\textwidth]{figures/low_resolution_success_imR_coarse.png}\\
+        \includegraphics[width=0.49\textwidth]{paper/latex/figures/high_resolution_success_graph.png}
+        \includegraphics[width=0.49\textwidth]{paper/latex/figures/low_resolution_success_graph.png}\\
+        
+    \end{center}
+    
+    \caption{In this figure, we draw a simple artificial example to demonstrate the importance of multiscale patch comparison. In the left column, the fine scale image combined with a small patch size $P_{5 \times 5}$ leads to an accurate disparity curve, whereas in the right example, this happens through the coarse scale and the bigger patch $P_{13 \times 13}$. In the right example, we can observe, that we can approach the same disparity curve by applying a small patch size ($5 \times 5$) after downsampling the coarse scale image at a rate $\sfrac{13}{5}$. This example verifies that instead of keep changing the patch size, we can keep it fixed and apply it to a scale-space pyramid of the stereo pair.}
+    \label{fig:multiscale_importance_2D}
+\end{figure}
 
-\makebox[\textwidth][c]{
-\begin{subfigure}[t]{0.53\textwidth}
-    \includegraphics[width=\textwidth]{figures/high_resolution_success_imR_fine.png}
-    \vspace{-15pt}
-\end{subfigure}
-\begin{subfigure}[t]{0.53\textwidth}
-    \includegraphics[width=\textwidth]{figures/low_resolution_success_imR_fine.png}\\
-    \vspace{-15pt}
-\end{subfigure}
-}
-
-\makebox[\textwidth][c]{
-\begin{subfigure}[t]{0.53\textwidth}
-    \includegraphics[width=\textwidth]{figures/high_resolution_success_imL_coarse.png}
-    \vspace{-15pt}
-\end{subfigure}
-\begin{subfigure}[t]{0.53\textwidth}
-    \includegraphics[width=\textwidth]{figures/low_resolution_success_imL_coarse.png}\\
-    \vspace{-15pt}
-\end{subfigure}
-}
-
-\makebox[\textwidth][c]{
-\begin{subfigure}[t]{0.53\textwidth}
-    \includegraphics[width=\textwidth]{figures/high_resolution_success_imR_coarse.png}
-    \vspace{-5pt}
-\end{subfigure}
-\begin{subfigure}[t]{0.53\textwidth}
-    \includegraphics[width=\textwidth]{figures/low_resolution_success_imR_coarse.png}\\
-    \vspace{-5pt}
-\end{subfigure}
-}
-
-\makebox[\textwidth][c]{
-\begin{subfigure}[t]{0.54\textwidth}
-    \includegraphics[width=\textwidth]{figures/high_resolution_success_graph.png}
-    \vspace{-10pt}
-\end{subfigure}
-\begin{subfigure}[t]{0.54\textwidth}
-    \includegraphics[width=\textwidth]{figures/low_resolution_success_graph.png}\\
-    \vspace{-10pt}
-\end{subfigure}
-}
-\vspace{-15pt}
-\caption{In this figure, we draw a simple artificial example to demonstrate the importance of multiscale patch comparison. In the left column, the fine scale image combined with a small patch size $P_{5 \times 5}$ leads to an accurate disparity curve, whereas in the right example, this happens through the coarse scale and the bigger patch $P_{13 \times 13}$. In the right example, we can observe, that we can approach the same disparity curve by applying a small patch size ($5 \times 5$) after downsampling the coarse scale image at a rate $\sfrac{13}{5}$. This example verifies that instead of keep changing the patch size, we can keep it fixed and apply it to a scale-space pyramid of the stereo pair.}
-\label{fig:multiscale_importance_2D}  
-\vspace{-3pt}      
-\end{figure*}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{MSNet architecture}
 
@@ -245,14 +197,14 @@ MSNet comprises of 4 CNN modules - $f_1, f_2, f_3, f_4$, which are repeated for 
 
 In this section we present the specific cnn architectures used as the learnable parts of our model. 
 
-\begin{figure}
+\begin{figure}[t]
     \centering
     \includegraphics[width = \textwidth]{figures/stereo_architecture.png}
     \caption{Scale fusion network overview. Its main constructive blocks are the horizontal pipelines (green colour) representing end-to-end predictions at specific scale $\sigma$ and the vertical pipelines (grey colour) representing the pair-scales fusion at similarity matrix level. The red-coloured blocks are the learned parts of our architecture, while the yellow coloured ones are hand-crafted layers.}
     \label{fig:cnn_architecture}
 \end{figure}
 
-\begin{table}[]
+\begin{table}[t]
     \centering
     \begin{tabular}{ l|c|c }
     Description & Symbol & Set \rule{0pt}{2ex}\\
@@ -302,232 +254,16 @@ In this section we present the specific cnn architectures used as the learnable 
     \label{tab:entity_description}
 \end{table}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Experimental evaluation}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Experimental Evaluation}
 
-In this section we provide some quantitative and qualitative results of our proposed methods on the large synthetic SceneFlow dataset. In section \ref{sec:4_1}, we show  how the multi-scale fusion algorithm adopts progressively detailed information, as it moves to fine scales. In section \ref{sec:4_2}, we compare the proposed network to the state-of-the-art methods, at SceneFlow dataset. In section ..., we compare the proposed network to some more generic architecture, showing that enforcing the multi-scale process leads to better results even with less trainable parameters. In section ..., we compare the proposed network to the ones following the same architecture without weight sharing.
-
-
-
-\subsection{Multi-Scale fusion analysis} \label{sec:4_1}
-
-In figure \ref{fig:multiscale_importance}, we show how our 3D cnn network has learned incorporating and progressively adopting fine scale predictions. We choose two points with different features; the yellow-box region contains a thin object with texture, which is appropriate for small and high-resolution patch. On the other hand, the orange-box contains a background wall with repetitive pattern, which needs a broader patch containing features from neighbourhood objects. In the orange-box scenario a small, high-resolution patch would lead to a confusion with each neighboor points. For confirming this hypothesis, we initially tune the network for single-scale predictions (i.e. right column in the graph). We can confirm that fine scale works well in the yellow-box and coarse scale in the orange-box region. On the left column, we observe the corresponding results, when the network is set to multi-scale prediction; it achieves accurate predictions in both cases, since it has learned to detect the appropriate scale and rely its prediction on it.
-
-In figure \ref{fig:EMAPs} we present the predictions of the network along with the error images. We observe that initially, at the coarse scale, the network predicts a rough estimation of the depth without many details. As it passes through finer scales, it gradually adopts high-resolution details. This procedure can be seen, as a step-by-step refinement of the initial low-resolution prediction.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%% Multiscale 3d importance %%%%%%%%%%%%%%%%%%%%%
-\begin{figure*}[t]
-\centering
-\makebox[\textwidth][c]{
-    \begin{subfigure}[b]{0.5\textwidth}
-        \includegraphics[width=\textwidth]{figures/multiscale_importance_image_patches.pdf}\\
-        \vspace{-15pt}                
-    \end{subfigure} 
-}
-\centering
-\makebox[\textwidth][c]{
-    \begin{subfigure}[b]{1.15\textwidth}
-        \includegraphics[width=\textwidth]{figures/multiscale_importance_graph_high_resolution.pdf}\\
-        \vspace{-15pt}                
-    \end{subfigure} 
-}
-\centering
-\makebox[\textwidth][c]{
-    \begin{subfigure}[b]{1.15\textwidth}
-        \includegraphics[width=\textwidth]{figures/multiscale_importance_graph_low_resolution.pdf}\\
-        \vspace{-15pt}                
-        \caption{In this figure, we compare two regions of the same image that require processing on different scale. The centre point of the yellow rectangle is a small object on the foreground with many features (i.e. handle of a knife), whilst the orange one represents a background area inside a repetitive pattern. The first column of graphs represents the Multi-Scale similarity volumes $S^{\{ \sigma_0, ..., \sigma_n \} }$ The graphs prove that, as we expected, disparity estimation is accurate on higher scale for the yellow rectangle and on t As expected,  }
-    \end{subfigure} 
-}
-\vspace{-15pt}
-\caption{TEXT}
-\label{fig:multiscale_importance}  
-\vspace{-3pt}      
-\end{figure*}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{figure*}[t]
-\centering
-\makebox[\textwidth][c]{
-    \begin{subfigure}[b]{0.28\textwidth}
-        \includegraphics[width=\textwidth]{figures/imL_0.png}\\
-        \vspace{-15pt}                
-        \caption{$X^{L,1}$}
-    \end{subfigure} 
-    \hspace{0.001cm} 
-    \begin{subfigure}[b]{0.28\textwidth}
-        \includegraphics[width=\textwidth]{figures/imL_1.png}\\
-        \vspace{-15pt}      
-        \caption{$X^{L,2}$}
-    \end{subfigure} 
-    \hspace{0.001cm} 
-    \begin{subfigure}[b]{0.28\textwidth}
-        \includegraphics[width=\textwidth]{figures/imL_2.png}\\
-        \vspace{-15pt}                      
-        \caption{$X^{L,4}$}
-    \end{subfigure} 
-    \hspace{0.001cm} 
-    \begin{subfigure}[b]{0.28\textwidth}
-        \includegraphics[width=\textwidth]{figures/imL_3.png}\\
-        \vspace{-15pt}     
-        \caption{$X^{L,8}$}
-    \end{subfigure}         
-}
-\centering
-\makebox[\textwidth][c]{
-    \begin{subfigure}[b]{0.28\textwidth}
-        \includegraphics[width=\textwidth]{figures/pred_comb_0.png}\\
-        \vspace{-15pt}                
-        \caption{$\hat{D}_{comb}^{L,1}$}
-    \end{subfigure} 
-    \hspace{0.001cm} 
-    \begin{subfigure}[b]{0.28\textwidth}
-        \includegraphics[width=\textwidth]{figures/pred_comb_1.png}\\
-        \vspace{-15pt}      
-        \caption{$\hat{D}_{comb}^{L,2}$}
-    \end{subfigure} 
-    \hspace{0.001cm} 
-    \begin{subfigure}[b]{0.28\textwidth}
-        \includegraphics[width=\textwidth]{figures/pred_comb_2.png}\\
-        \vspace{-15pt}                      
-        \caption{$\hat{D}_{comb}^{L,4}$}
-    \end{subfigure} 
-    \hspace{0.001cm} 
-    \begin{subfigure}[b]{0.28\textwidth}
-        \includegraphics[width=\textwidth]{figures/pred_comb_3.png}\\
-        \vspace{-15pt}     
-        \caption{$\hat{D}_{comb}^{L,8}$}
-    \end{subfigure}         
-}
-\centering
-\makebox[\textwidth][c]{
-    \begin{subfigure}[b]{0.28\textwidth}
-        \includegraphics[width=\textwidth]{figures/pred_comb_0_err.png}\\
-        \vspace{-15pt}                
-        \caption{$E_{comb}^{L,1}$}
-    \end{subfigure} 
-    \hspace{0.001cm} 
-    \begin{subfigure}[b]{0.28\textwidth}
-        \includegraphics[width=\textwidth]{figures/pred_comb_1_err.png}\\
-        \vspace{-15pt}      
-        \caption{$E_{comb}^{L,2}$}
-    \end{subfigure} 
-    \hspace{0.001cm} 
-    \begin{subfigure}[b]{0.28\textwidth}
-        \includegraphics[width=\textwidth]{figures/pred_comb_2_err.png}\\
-        \vspace{-15pt}                      
-        \caption{$E_{comb}^{L,4}$}
-    \end{subfigure} 
-    \hspace{0.001cm} 
-    \begin{subfigure}[b]{0.28\textwidth}
-        \includegraphics[width=\textwidth]{figures/pred_comb_3_err.png}\\
-        \vspace{-15pt}     
-        \caption{$E_{comb}^{L,8}$}
-    \end{subfigure}         
-}
-\centering
-\makebox[\textwidth][c]{
-    \begin{subfigure}[b]{0.28\textwidth}
-        \includegraphics[width=\textwidth]{figures/pred_0.png}\\
-        \vspace{-15pt}                
-        \caption{$\hat{D}^{L,1}$}
-    \end{subfigure} 
-    \hspace{0.001cm} 
-    \begin{subfigure}[b]{0.28\textwidth}
-        \includegraphics[width=\textwidth]{figures/pred_1.png}\\
-        \vspace{-15pt}      
-        \caption{$\hat{D}^{L,2}$}
-    \end{subfigure} 
-    \hspace{0.001cm} 
-    \begin{subfigure}[b]{0.28\textwidth}
-        \includegraphics[width=\textwidth]{figures/pred_2.png}\\
-        \vspace{-15pt}                      
-        \caption{$\hat{D}^{L,4}$}
-    \end{subfigure} 
-    \hspace{0.001cm} 
-    \begin{subfigure}[b]{0.28\textwidth}
-        \includegraphics[width=\textwidth]{figures/pred_3.png}\\
-        \vspace{-15pt}     
-        \caption{$\hat{D}^{L,8}$}
-    \end{subfigure}         
-}
-\centering
-\makebox[\textwidth][c]{
-    \begin{subfigure}[b]{0.28\textwidth}
-        \includegraphics[width=\textwidth]{figures/pred_0_err.png}\\
-        \vspace{-15pt}                
-        \caption{$E^{L,1}$}
-    \end{subfigure} 
-    \hspace{0.001cm} 
-    \begin{subfigure}[b]{0.28\textwidth}
-        \includegraphics[width=\textwidth]{figures/pred_1_err.png}\\
-        \vspace{-15pt}      
-        \caption{$E^{L,2}$}
-    \end{subfigure} 
-    \hspace{0.001cm} 
-    \begin{subfigure}[b]{0.28\textwidth}
-        \includegraphics[width=\textwidth]{figures/pred_2_err.png}\\
-        \vspace{-15pt}                      
-        \caption{$E^{L,4}$}
-    \end{subfigure} 
-    \hspace{0.001cm} 
-    \begin{subfigure}[b]{0.28\textwidth}
-        \includegraphics[width=\textwidth]{figures/pred_3_err.png}\\
-        \vspace{-15pt}     
-        \caption{$E^{L,8}$}
-    \end{subfigure}         
-}
-\vspace{-15pt}
-\caption{TEXT}
-\label{fig:EMAPs}  
-\vspace{-3pt}      
-\end{figure*}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\subsection{SceneFlow benchmark} \label{sec:4_2}
-
-\subsubsection{Using multi-scale processing implicitly vs explicitly}
-
-In this section, we want to test the benefit of enforcing multi-scale processing explicitly. For this reason, we design 4 CNN architectures that follow the MSNet designing principles, but without enforcing multi-scale processing explicitly; OneRes operates only on the initial resolution, MRes2d uses the hourglass model (i.e. downsampling and upsampling) only in the 2D-processing part, MRes3d uses the hourglass model only in the 3D-processing part and finally MRes2d3d in both the 2D and 3D processing part. The hourglass architecture allows by design implicit multi-scale processing. For each of the 4 CNNs we create two versions; small (S) has the same number of free parameters as MSNet and big (B) which has as many parameters as the GPU memory allows.
-
-In figure \ref{fig:mae_SFNvsSFN_free_weights} we observe that MSNet outperforms both versions of the generic architectures, which is a crucial indicator that enforcing multi-scale processing explicitly is beneficial for depth estimation. More specifically, big (B) networks outperform small (S) ones and using the hourglass architecture in the 3D processing part (MRes3d) gives the best performance.
-
-\begin{figure}[h]
-    \centering
-    \includegraphics[width=\textwidth]{figures/freiburg_msnet_vs_monolithic_mae.pdf}
-    \caption{MSNet comparison with generic architectures}
-    \label{fig:mae_SFNvsGenericNets}
-\end{figure}
-
-\subsubsection{Comparing MSNet with networks that do not share weights}
-
-In this section, we 
-
-\begin{figure}[t]
-    \centering
-    \includegraphics[width=\textwidth]{figures/freiburg_msnet_vs_free_weights_mae.pdf}
-    \caption{Text}
-    \label{fig:mae_SFNvsSFN_free_weights}
-\end{figure}
-
-Secondly, we question whether using the same constructive blocks $f_1$, $f_2$, $f_3$, $f_4$ repetitively between different scales lead to better results that leaving all model weights free along training. We must notice here that freeing the weights cancels the networks scalability, since the processing scales must be predefined and be consistent between training and test phase. From the results at table \ref{tab:results} and figure \ref{fig:mae_SFNvsSFN_free_weights} we can extract two conclusions; Firstly, training the network $f_1$ once for all scales leads to an optimal solution. Seconly, at the 3d level, repeating the building block $f_2$ and $f_3$ through MultiScaleFusion algorithm \ref{alg:multi_scale_fusion} leads to suboptimal solution. Keeping the same backbone architecture, with free weights between scales, provides better accuracy in the cost of $4x$ parameters and the cancelling of scalability.
-
-\subsubsection{Compare MSNet with SOTA networks}
-
-Finally, we compare our network with the SoA models. In table \ref{tab:results}, it is shown that MSNet and MSNetFree3d set a new state-of-the-art performance. MSNet, specifically, the SoA performance even though it is much lighter network than those presented in previous works.
-
-\begin{table}[]
+\begin{table}[t]
     \centering
     \begin{tabular}{ c|c|c|c|c }
     Method & Parameters (M) & Runtime & MAE & PCG \\
     
     \hline
-    \multicolumn{5}{c}{ \textbf{Our benchmark - Generic nets} } \\
+    \multicolumn{5}{c}{ \textbf{Our benchmark - IMS architectures} } \\
     \hline
     MSNet & 0.743 & 0.32 & 1.017 & 3.98 \\
     \hline
@@ -564,27 +300,108 @@ Finally, we compare our network with the SoA models. In table \ref{tab:results},
     \label{tab:results}
 \end{table}
 
-\subsubsection{MSNet evaluation on smaller training set}
+\begin{figure}[t]
+    \begin{center}
+        \includegraphics[width=0.24\textwidth,clip]{figures/imL_0.png}
+        \includegraphics[width=0.24\textwidth,clip]{figures/imL_1.png}
+        \includegraphics[width=0.24\textwidth,clip]{figures/imL_2.png}
+        \includegraphics[width=0.24\textwidth,clip]{figures/imL_3.png}
+        \\
+        \includegraphics[width=0.24\textwidth,clip]{figures/pred_comb_0.png}
+        \includegraphics[width=0.24\textwidth,clip]{figures/pred_comb_1.png}
+        \includegraphics[width=0.24\textwidth,clip]{figures/pred_comb_2.png}
+        \includegraphics[width=0.24\textwidth,clip]{figures/pred_comb_3.png}
+        \\
+        \includegraphics[width=0.24\textwidth,clip]{figures/pred_comb_0_err.png}
+        \includegraphics[width=0.24\textwidth,clip]{figures/pred_comb_1_err.png}
+        \includegraphics[width=0.24\textwidth,clip]{figures/pred_comb_2_err.png}
+        \includegraphics[width=0.24\textwidth,clip]{figures/pred_comb_3_err.png}\\
+        \includegraphics[width=0.24\textwidth,clip]{figures/pred_0.png}
+        \includegraphics[width=0.24\textwidth,clip]{figures/pred_1.png}
+        \includegraphics[width=0.24\textwidth,clip]{figures/pred_2.png}
+        \includegraphics[width=0.24\textwidth,clip]{figures/pred_3.png}
+        \\
+        \includegraphics[width=0.24\textwidth,clip]{figures/pred_0_err.png}
+        \includegraphics[width=0.24\textwidth,clip]{figures/pred_1_err.png}
+        \includegraphics[width=0.24\textwidth,clip]{figures/pred_2_err.png}
+        \includegraphics[width=0.24\textwidth,clip]{figures/pred_3_err.png}\\        
+    \end{center}
+    
+    \caption{Text}
+    \label{fig:EMAPs}
+\end{figure}
 
-In figure \ref{fig:msnet_smaller_tr_set}, it is shown how MSNet observes when trained on a smaller percentage of the training set. As expected, the accuracy increases as the model observes more training data.
+In this section we measure the performance of the proposed method on the large synthetic SceneFlow dataset. Table \ref{tab:results} presents the aggregated results of our experiments and figure \ref{fig:EMAPs} the results on a single training example.
 
-\begin{figure}
+\subsection{The Effect Of Using Multi-Scale Processing Explicitly}
+
+In this section, we test whether enforcing multi-scale processing explicitly, as in MSNet, is more beneficial than using multi-scale processing internally as part of the CNN architecture. For this reason, we design 4 new CNN models that follow the MSNet designing principles, but without enforcing multi-scale processing explicitly; Instead, we use the hourglass model (i.e. encoder-decoder architecture) which is the proposed method by the literature, for applying multi-resolution processing internally. The 4 architectures that we desing are the following; OneRes operates only on the initial resolution, MRes2d uses the hourglass model only in the 2D-processing part, MRes3d only in the 3D-processing part and finally MRes2d3d in both the 2D and 3D processing part. For each of the 4 CNNs we create two versions; the small (S) version has the same number of free parameters as MSNet and big (B) has as many parameters as the GPU memory allows. For clarity, we call all these new models with the common name Implicit Multi-Scale (IMS) architectures.
+
+In figure \ref{fig:mae_SFNvsSFN_free_weights} we observe that MSNet outperforms both versions of the IMS architectures, which is a crucial indicator that enforcing multi-scale processing explicitly is beneficial for depth estimation. More specifically, big (B) networks outperform small (S) ones as expecting and using the hourglass architecture in the 3D processing part (MRes3d) gives the best performance.
+
+\begin{figure}[t]
     \centering
-    \includegraphics[width=\textwidth]{figures/freiburg_msnet_mae_smaller_training_set.pdf}
-    \caption{Caption}
-    \label{fig:msnet_smaller_tr_set}
-\end{figure}{}
+    \includegraphics[width=0.7\textwidth]{figures/freiburg_msnet_vs_monolithic_mae.pdf}
+    \caption{MSNet comparison with generic architectures}
+    \label{fig:mae_SFNvsGenericNets}
+\end{figure}
 
-\subsubsection{MSNet evaluation on different scale combinations}
+\subsection{What Is the Cost of Sharing Weights}
 
-In figure \ref{fig:msnet_scales_evaluation}, we evaluate MSNet under different scale combinations. We observe that not only error in terms of $\mu$ absolute error and PCG error decreases as we add more scales, but also the standard deviation $\sigma$. This indicates that our network becomes more robust by operating in more scales. We also observe that adding coarse scales increases the robustness, even though the accuracy may be worse; for example $T=\{ 8 \}$ is better than $ T = \{ 16 \}$ in terms of accuracy (i.e. smaller $\mu$ absolute error) but $ T = \{ 16 \}$ is more robust (i.e. smaller $\sigma$). 
+MSNet is based on the idea of repeating its building blocks $f_1, f_2, f_3, f_4$ along the different scales. Following this principle, it obtains the crucial advantage of being tuned on-demand according to the application needs (accuracy vs computational cost). An important question that arises is how much is the cost in terms of accuracy for gaining such scalability; what would be the corresponding end-point-error (EPE) if we were to apply the backbone architecture of MSNET without weight sharing (i.e. without repeating the same building blocks)? For answering this question, we create a second internal benchmark by implementing three new CNN architectures; MSNet Free2d has free weights only in the 2D-processing part (doesn't repeat $f_1$ blocks), MSNet Free3D has free weights only in the 3D-processing part (doesn't repeat $f_2, f_3, f_4$ building blocks) and, finally, MSNet Free2D3D has free weights end-to-end. The results in the SceneFlow dataset are presented in figure \ref{fig:mae_msnet_vs_free_weights} and in table \ref{tab:results}. We observe that repeating the 3D-processing building blocks ($f_2, f_3, f_4$) through the MultiScaleFusion algorithm leads to a suboptimal solution. Leaving the weights free leads to a better combination of the multi-scale information in the 3D-processing part, leading to an EPE close to the State-Of-The-Art. On the other hand, such approach cancels the scalability advantage of MSNet and is much more memory-intensive.
 
-\begin{figure}
+\begin{figure}[t]
     \centering
-    \includegraphics[width=\textwidth]{figures/msnet_scales_evaluation.pdf}
+    \includegraphics[width=0.5\textwidth]{figures/freiburg_msnet_vs_free_weights_mae.pdf}
+    \caption{Text}
+    \label{fig:mae_msnet_vs_free_weights}
+\end{figure}
+
+\subsection{MSNet vs State-Of-The-Art models}
+
+In table \ref{tab:results}, we can compare the proposed MSNet model with the other SOTA architectures that have been proposed, in the SceneFlow dataset. We observe that MSNet achieves competitive performance (i.e. $1.017$ px of EPE compared to the $0.74$ in \cite{du2019amnet}) even though it uses much less free parameters ($0.7M$ compared to $4.37M$ parameters). This indicates that repeating building blocks along different scales is a beneficial designing principle, that can lead to competitive performance with smaller networks.  
+
+\subsection{MSNet evaluation on different scale combinations}
+
+The fundamental advantage of MSNet compared to other architectures is being able to be tuned between accuracy and efficiency at test time. In figure \ref{fig:msnet_scales_evaluation}, we measure how much the EPE of MSNet varies under using different scales. Firstly, we observe that the EPE and PCG error decreases as we add more scales. Additionaly, the standard deviation $\sigma$ of both EPE and PCG error gets smaller as we add more processing scales, which indicates that by oretaning in more scales we also gain robustness. In general terms adding coarse scales increases the robustness of our predictions, even though the mean EPE may be worse; for example $T=\{ 8 \}$ is better than $ T = \{ 16 \}$ in terms of EPE (i.e. smaller $\mu$ absolute error) but $ T = \{ 16 \}$ has smaller $\sigma$. 
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/msnet_scales_evaluation.pdf}
     \caption{MSNet accuracy for different scale combinations. On the x-axis, there are the different scale combinations (i.e. the blue area contains single-scale set-ups, the green area two-scale, the purple area three-scale and the orange area the four-scale combination that was used in the training phase). On the first row we observe the $\mu$ and $\sigma$ of the absolute end-point error and on the second row the $\mu$ and $\sigma$ of the percentage of points with end-point error over 3 pixel.}
     \label{fig:msnet_scales_evaluation}
 \end{figure}
+
+\subsection{Multi-Scale fusion analysis} \label{sec:4_1}
+
+In figure \ref{fig:multiscale_importance}, we show how our 3D cnn network has learned incorporating and progressively adopting fine scale predictions. We choose two points with different features; the yellow-box region contains a thin object with texture, which is appropriate for small and high-resolution patch. On the other hand, the orange-box contains a background wall with repetitive pattern, which needs a broader patch containing features from neighbourhood objects. In the orange-box scenario a small, high-resolution patch would lead to a confusion with each neighboor points. For confirming this hypothesis, we initially tune the network for single-scale predictions (i.e. right column in the graph). We can confirm that fine scale works well in the yellow-box and coarse scale in the orange-box region. On the left column, we observe the corresponding results, when the network is set to multi-scale prediction; it achieves accurate predictions in both cases, since it has learned to detect the appropriate scale and rely its prediction on it.
+
+In figure \ref{fig:EMAPs} we present the predictions of the network along with the error images. We observe that initially, at the coarse scale, the network predicts a rough estimation of the depth without many details. As it passes through finer scales, it gradually adopts high-resolution details. This procedure can be seen, as a step-by-step refinement of the initial low-resolution prediction.
+
+\begin{figure}[t]
+    \begin{center}
+        \includegraphics[width=0.49\textwidth]{paper/latex/figures/multiscale_importance_image_patches.pdf}\\
+        \includegraphics[width=\textwidth]{paper/latex/figures/multiscale_importance_graph_high_resolution.pdf}\\
+        \includegraphics[width=\textwidth]{figures/multiscale_importance_graph_high_resolution.pdf}
+    \end{center}
+    
+    \caption{In this figure, we compare two regions of the same image that require processing on different scale. The centre point of the yellow rectangle is a small object on the foreground with many features (i.e. handle of a knife), whilst the orange one represents a background area inside a repetitive pattern. The first column of graphs represents the Multi-Scale similarity volumes $S^{\{ \sigma_0, ..., \sigma_n \} }$ The graphs prove that, as we expected, disparity estimation is accurate on higher scale for the yellow rectangle and on t As expected,  }
+    \label{fig:multiscale_importance}
+\end{figure}
+
+
+\subsection{MSNet evaluation on smaller training set}
+
+In figure \ref{fig:msnet_smaller_tr_set}, we present MSNet performance under training set of different size. As expected, the accuracy increases as the model observes more training data.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.5\textwidth]{figures/freiburg_msnet_mae_smaller_training_set.pdf}
+    \caption{Caption}
+    \label{fig:msnet_smaller_tr_set}
+\end{figure}
+
+
 
 \clearpage
 
