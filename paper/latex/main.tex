@@ -503,7 +503,7 @@ In this section, we
 
 Secondly, we question whether using the same constructive blocks $f_1$, $f_2$, $f_3$, $f_4$ repetitively between different scales lead to better results that leaving all model weights free along training. We must notice here that freeing the weights cancels the networks scalability, since the processing scales must be predefined and be consistent between training and test phase. From the results at table \ref{tab:results} and figure \ref{fig:mae_SFNvsSFN_free_weights} we can extract two conclusions; Firstly, training the network $f_1$ once for all scales leads to an optimal solution. Seconly, at the 3d level, repeating the building block $f_2$ and $f_3$ through MultiScaleFusion algorithm \ref{alg:multi_scale_fusion} leads to suboptimal solution. Keeping the same backbone architecture, with free weights between scales, provides better accuracy in the cost of $4x$ parameters and the cancelling of scalability.
 
-\subsubsection{Compare MSNet vs state-of-the-art networks}
+\subsubsection{Compare MSNet with SOTA networks}
 
 Finally, we compare our network with the SoA models. In table \ref{tab:results}, it is shown that MSNet and MSNetFree3d set a new state-of-the-art performance. MSNet, specifically, the SoA performance even though it is much lighter network than those presented in previous works.
 
@@ -533,12 +533,16 @@ Finally, we compare our network with the SoA models. In table \ref{tab:results},
     Free3d & 2.75 & 0.33 & \textbf{0.882} & \textbf{3.48} \\
     Free2d3d & 2.974 & 0.33 & 1.107 & 4.36 \\
     \hline
-    \multicolumn{5}{c}{ \textbf{SoA} } \\
+    \multicolumn{5}{c}{ \textbf{SOTA} } \\
     \hline
     PSMNet\cite{Chang2018PyramidNetwork} & - & - & 1.09 & - \\
     CRL\cite{Pang2018CascadeMatching} & - & - & 1.32 & - \\
     DispNetC\cite{Mayer2016ALD} & - & - & 1.68 & - \\
     GC-Net\cite{Kendall2017End-to-EndRegression} & 3.5 & 0.95 & 2.51 & 9.34 \\
+    Edge-Stereo\cite{SongEdgeStereoResidual} & - & - & 1.12 & 4.99 \\
+    CSPN\cite{cheng2018learning} & - & - & 0.78 & - \\
+    GA-Net\cite{zhang2019ga} & 2.3 & 1.5 & 0.84 & - \\
+    AMNet\cite{du2019amnet} & 4.37 & - & 0.74 & - \\
     
     \hline
     \end{tabular}
