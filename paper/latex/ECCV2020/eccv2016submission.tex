@@ -35,9 +35,9 @@
 \maketitle
 
 \begin{abstract}
-Convolutional neural networks exhibit exceptional performance in predicting depth from stereo images. However, this performance comes with two essential drawbacks (a) they consume extraordinary computational power (clusters of GPUs) even for a single prediction (b) their memory and computational demand is preset from the training phase and cannot be altered at test time according to the capacities/needs of each application.
-For confronting these problems, we propose a scalable CNN architecture - MSNet - that adjusts to the specific requirements of each application; it can reduce its computational cost by sacrificing some precision or target for high accuracy if more computational resources are available. This preference for accuracy vs efficiency is determined at test time, without any need for retraining. For achieving this scalability,  we adopted the basic ideas of scale-space theory and adjusted them into the MSNet architecture.
-Finally, we compare MSNet to the state-of-the-art methods in the SceneFlow dataset, exhibiting challenging performance using considerably less learnable parameters. 
+Convolutional neural networks exhibit exceptional performance in predicting depth from stereo images. However, this performance comes with two essential drawbacks (a) they consume extraordinary computational power (clusters of GPUs) even for a single prediction (b) their memory and computational demand is preset from the training phase, thus it cannot be adjusted to the available resources of each application, at test time.
+For confronting these problems, we propose a scalable CNN architecture (MSNet) that adjusts to the specific requirements of each application; it can reduce its computational demands by sacrificing some precision or target for high accuracy if more resources are available. The bias for accuracy or efficiency can be determined at test time, without any need for retraining. For achieving this scalability, we adopted the basic ideas of scale-space theory and incorporated them into the MSNet architecture.
+MSNet exhibits challenging perfomance comparing to the state-of-the-art methods in the SceneFlow dataset, even though it uses considerably less learnable parameters. 
 
 \keywords{Depth Estimation, Stereo Vision, Deep Learning, Multi-Scale Processing}
 \end{abstract}
@@ -51,7 +51,7 @@ Stereo vision forms a particular case of the general 3D reconstruction problem. 
 z = f\frac{B}{d}
 \end{equation}
 
-where $z$ is the distance from the camera level (depth), $f$ is the focal length of the camera and $d$ is the disparity. Defining the stereo pair as $X = (X^L, X^R)$, the stereo problem demotes in finding all correspondences $X^L(x,y) \leftrightarrow X^R(x-d, y), \forall (x,y)$.
+where $z$ is the distance from the camera level (depth), $f$ is the focal length and $d$ is the disparity. Defining the stereo pair as $X = (X^L, X^R)$, the stereo problem demotes in finding all correspondences $X^L(x,y) \leftrightarrow X^R(x-d, y), \forall (x,y)$.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Related Work}
@@ -69,7 +69,7 @@ Shaked and Wolf [12] introduce an initial disparity prediction network pooling g
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Multiscale Analysis}
 
-In this section, we discuss the two-fold advantage of incorporating multiscale analysis for depth estimation; (a) it improves the accuracy of patch matching and (b) it offers the tools for designing a scalable model.
+In this section, we discuss the two-fold advantage of incorporating multiscale analysis in the problem depth estimation; (a) it improves the accuracy of the patch matching procedure and (b) it offers the tools for designing a scalable CNN model.
 
 \subsection{Multiscale Analysis Improves Patch Matching}
 
@@ -82,15 +82,46 @@ Disparity estimation is based on the hypothesis that the local context of corres
 \end{gathered}
 \end{equation}
 
-For hypothesis \ref{eq:similarity_hypothesis} to hold, we must choose thoughtfully two critical parameters that depend on the specific properties of the points under comparison. 
+For hypothesis \ref{eq:similarity_hypothesis} to hold, we must choose thoughtfully two critical parameters that depend on the visual properties of the reference point: (a) the size of the surrounding area that will be used (b) the scale of the comparison.
 
-Firstly, we must select the patch size correctly. For example, regions without texture require a large patch size, so that features from neighboor objects to be included in the compared region. On the other hand, for matching a small foreground object a small patch is appropriate since background objects add noise to the comparison.
+We define as $X^{ \{L|R\} (k,q)}$ the image obtained from $X^{ \{L|R\}} \equiv X^{ \{L|R\} (k_0=1,q_0=1)}$ through the typical downscaling process:
 
-The second parameter that we have to adjust is the scale of the comparison. The physical properties of an object (i.e. size), as well as the capturing procedure (i.e. distance from the object, angle), specify the appropriate scale for the patch matching. 
+\begin{equation}
+\begin{gathered} \label{eq:downsampling_procedure}
+    X^{ \{L|R\} (k_0=1,q_0=1)} \xrightarrow{downscaling} X^{ \{L|R\} (k_0,q=1)} \xrightarrow{downsampling} X^{ \{L|R\} (k,q)}
+    \\
+    k\geq 1, q\geq 1 
+\end{gathered}
+\end{equation}
 
-In figure \ref{fig:multiscale_importance_2D}, we design a simple artificial example to show that the task of patch matching is heavily dependent on choosing the correct scale.
+The downscaling part is done through an appropriate low-pass filter (e.g. Gaussian kernel) and the downsampling method through bilinear interpolation. The parameters $k \geq 1$ and $q \geq 1$ are the downscaling and downsampling rate respectively. Based on this formulation, we define a patch on a downscaled image as:
 
-We are dealing with both problems using multi-scale patch matching. We keep the patch size constant in terms of number of pixels, but we apply the patch matching procedure sequentially in downscaled and downsampled versions of the initial images. Thus, we apply the matching procedure in many scales and many different neighboor information. Afterwards we aggregate the comparison information from multiple scales.
+\begin{gather}
+    P^{ \{L|R\} (k,q)}_{n \times n}[x,y] = X^{ \{ L|R \}(k,q)} [x-n:x+n, y-n:y+n]
+\end{gather}
+
+For each reference point $[x,y]$ there is a different combination of scale $k$ and patch size $n \times n$ that leads to a successful matching procedure. For example, regions without texture require a large patch size, in order to incorporate features from neighboor objects. On the other hand, for small foreground objects a small patch is more appropriate, since, in this case, background objects add noise to the comparison. This variability requires multiple trials along many different scales and patch-sizes. If we define as $K$ and $N$ the set of scales and patch sizes that will be used, the computational complexity of the matching becomes $O(\| K \|, \| N \|) = \| K \| \| N \|$. For keeping the complexity low, we restrict the search space in one dimension, binding $k, n$ with respect to a single parameter $t$:
+
+\begin{gather}
+    n \times n = t(n_o \times n_0)\\
+    k = t
+\end{gather}
+
+?? Explain why ??
+
+After downscaling the initial image and removing the high-frequency details, it is possible to apply appropriate downsampling without loss of information. Thus, the two following patch contain similar information, even though they have different size:
+
+\begin{gather} \label{eq:patch_similar_information}
+    P^{ \{L|R\} (k,q=1)}_{n \times n}[x,y] \approx P^{ \{L|R\} (k,q)}_{\sfrac{(n \times n)}{q}}[\lceil \sfrac{x}{q} \rceil,\lceil \sfrac{y}{q} \rceil], \forall q \leq k
+\end{gather}{}
+
+Due to equation \ref{eq:patch_similar_information} it is feasible to obtain similar patch matching results, if instead of increasing the patch size, we downsample the stereo pair:
+
+\begin{gather} \label{eq:patch_similar_information1}
+     P^{ \{L|R\} (k = t, q = t)}_{(n_0 \times n_0)}[\lceil \sfrac{x}{t} \rceil, \lceil \sfrac{y}{t} \rceil] \approx P^{ \{L|R\} (k = t, q = 1)}_{t(n_0 \times n_0)}[x,y] 
+\end{gather}{}
+
+In figure \ref{fig:multiscale_importance_2D}, we design a simple artificial example to underline the importance of multiscale processing. We draw two different test cases: in the left-column scenario the fine scale ($k=1$) with a small patch size ($n_0 \times n_0 = 5 \times 5$) leads to superior accuracy, whereas in the right-column scenario the coarse scale ($k=t=2.6$) with a bigger patch size ($t(n_0 \times n_0) = 2.6(5 \times 5) =13 \times 13$) is more appropriate. In both cases, the matching score curve is similar for using $ P^{ \{L|R\} (k = 2.6, q = 1)}_{13 \times 13}[x,y] $ (red curve) and $P^{ \{L|R\}, (k = 2.6, q = 2.6)}_{5 \times 5}[\lceil \sfrac{x}{2.6} \rceil, \lceil \sfrac{y}{2.6} \rceil ]$ (green curve), confirming the claim of equation \ref{eq:patch_similar_information1}.
 
 \begin{figure}[t]
     \begin{center}
@@ -107,64 +138,64 @@ We are dealing with both problems using multi-scale patch matching. We keep the 
         
     \end{center}
     
-    \caption{In this figure, we draw a simple artificial example to demonstrate the importance of multiscale patch comparison. In the left column, the fine scale image combined with a small patch size $P_{5 \times 5}$ leads to an accurate disparity curve, whereas in the right example, this happens through the coarse scale and the bigger patch $P_{13 \times 13}$. In the right example, we can observe, that we can approach the same disparity curve by applying a small patch size ($5 \times 5$) after downsampling the coarse scale image at a rate $\sfrac{13}{5}$. This example verifies that instead of keep changing the patch size, we can keep it fixed and apply it to a scale-space pyramid of the stereo pair.}
+    \caption{Simple artificial example. The left and the right column correspond to two different scenarios. In both columns, the first two images are the left and the right stereo views of the same 3D pattern, using orthographic projection. The following two images are the same views convolved with a Gaussian kernel (downscaled). The red and blue bounding box correspond to the two different patch sizes and the red cross to the reference point. In the graphs, we observe the curves of the matching process. The vertical red dotted line shows the ground truth disparity.}
     \label{fig:multiscale_importance_2D}
 \end{figure}
 
 \subsection{Multiscale Analysis Enables A Scalable CNN Architecture}
 
-Multiscale analysis provides the tools for designing an agile CNN architecture that can be readjusted between efficiency and accuracy at test time (i.e. without repeating the training procedure). The learnable parts of the CNN can be repeated between the processing scales that are defined at test time. Thus, if we seek for efficiency and a rough estimation of the depth, we can tune the network to operate at coarse scales. Conversely, if accuracy is the priority, we will set the network to add fine scales, so that the depth estimation will include higher-resolution detail.
+Apart from improving the patch matching proecedure, the multiscale analysis provides the tools for designing an agile CNN architecture that can be readjusted between efficiency and accuracy at test time (i.e. without repeating the training procedure). The learnable parts of the CNN can be repeated between the processing scales that are defined on-demand. Thus, if we seek for efficiency and a rough estimation of the depth, we can tune the network to operate on coarse scales. Conversely, if accuracy is the priority, we will set the network to fine scales, leading to a depth estimation of higher-resolution details.
 
 \subsection{MSNet architecture}
 
-MSNet comprises of smaller building blocks (modules), which we analyse in this section. We name as $f_*$ the modules that contain learnable parameters and as $g_*$ the ones without learnable parameters. Table \ref{tab:entity_description} defines the tensors that are inputs/outputs of the modules. Figure \ref{fig:cnn_architecture} provides a visual description of all the modules that are part of the architecture.
+MSNet comprises of smaller building blocks (modules), which we analyse in this section. Each module is defined as separate entity since it implements a specific sub-task of the depth estimation. We name each module as $m_*$; a module can contain learnable parts, which we name $f_*$, and non-learnable parts, which we name $g_*$. All modules are differentiable in order for the backpropagation method to be applicable. Table \ref{tab:entity_description} defines the tensors that are the inputs or outputs of the modules. Figure \ref{fig:cnn_architecture} provides a visual description of all the modules that are part of the architecture.
 
-\subsubsection{Downscaling Module - $g_1$}
+\subsubsection{Module For Downscaling - $m_1$}
 
-The module $g_1^t : \mathbb{R}^{H \times W} \rightarrow \mathbb{R}^{\sfrac{H}{t} \times \sfrac{W}{t}}$ creates a downscaled stereo pair, where $t$ is the downscaling factor. 
+The module $m_1: \mathbb{R}^{H \times W} \rightarrow \mathbb{R}^{\sfrac{H}{t} \times \sfrac{W}{t}}$ creates a downscaled stereo pair, with $t$ being the downscaling factor. 
 
 \begin{equation} \label{eq:g1}
-    (X^{L,t}, X^{R,t}) = (g_1^t(X^L), g_1^t(X^R))
+    (X^{L,t}, X^{R,t}) = (m_1^t(X^L), m_1^t(X^R))
 \end{equation}{}
 
-Specifically, $g_1^t$ convolves the stereo image $X^{\{L|R\}}$ with a Gaussian kernel 
+Specifically, $m_1^t$ is two-step prcedure; initially we apply a convolution of the stereo image $X^{\{L|R\}}$ with a discrete Gaussian kernel 
 
 \begin{gather} \label{eq:g1_kernel}
     k(x, y, \sigma) = \frac{1}{2\pi\sigma^2} \cdot e^{\sfrac{-(x^2 + y^2)}{2\sigma^2}} \\
     x,y \in \{-\lceil 4*\sigma + 0.5 \rceil, ..., \lceil 4*\sigma + 0.5 \rceil\}, \sigma = \sfrac{t}{3}
 \end{gather}
 
-and afterwards applies bilinear downsampling. In MSNet, $t$ is set to the following list of values $ T = \{ 2^2, 2^3, 2^4, 2^5 \}$ but in general they can be defined to be any positive number. 
+and bilinear downsampling.
 
 
-\subsubsection{Feature Extraction Module - $f_1$}
+\subsubsection{Module For Feature Extraction - $m_2$}
 
-The module $f_1: \mathbb{R}^{H \times W \times 3} \rightarrow \mathbb{R}^{H \times W \times K}$ is the CNN responsible for extracting local features for each point of the stereo images. This process is done separately for each stereo image and scale.
+The module $m_2: \mathbb{R}^{H \times W \times 3} \rightarrow \mathbb{R}^{H \times W \times K}$ extracts local features for each point of the stereo images. This process is done separately for each stereo image and scale, with a CNN $f_1$
 
 \begin{equation} \label{eq:f_1}
     (X^{L,t}_{desc}, X^{R,t}_{desc}) = (f_1(X^{L,t}), f_1(X^{R, t}))
 \end{equation} 
 
-\subsubsection{Module For Creating The Comparison Volume - $g_2$}
+\subsubsection{Module For Comparison Volume - $m_3$}
 
-The module $g_2: (\mathbb{R}^{H \times W \times K}, \mathbb{R}^{H \times W \times K}, \mathbb{R}^{H \times W \times 3}) \rightarrow \mathbb{R}^{D \times H \times W \times (K+3)}$ is used for zipping comparison information into a 3D tensor, the comparison volume $C^t$. Normally, the comparison volume is formed by simply concatenating the descriptors in each disparity position. This approach introduces significant redundancy; the comparison volume with dimensionality $D \times H \times W \times 2K$ is builded by repeating only $H \times W \times 2K$ unique values. For reducing such redundancy, we design a new comparison metric between two scalar features:
+The module $m_3: (\mathbb{R}^{H \times W \times K}, \mathbb{R}^{H \times W \times K}, \mathbb{R}^{H \times W \times 3}) \rightarrow \mathbb{R}^{D \times H \times W \times (K+3)}$ is used for zipping the comparison information into a 3D tensor, the comparison volume $C^t$. Normally, the comparison volume is formed by simply concatenating the descriptors in each disparity position. This approach introduces significant redundancy; the comparison volume with dimensionality $D \times H \times W \times 2K$ is builded by repeating only $H \times W \times 2K$ unique values. For reducing such redundancy, we design a new comparison metric between two scalar features:
 
 \begin{equation} \label{eq:m}
-    m: \mathbb{R}^2 \rightarrow \mathbb{R}: m(a_1, a_2) = \frac{|a_1| + |a_2|}{2} \cdot e^{-|a_1 - a_2|}    
+    l: \mathbb{R}^2 \rightarrow \mathbb{R}: l(a_1, a_2) = \frac{|a_1| + |a_2|}{2} \cdot e^{-|a_1 - a_2|}    
 \end{equation}
 
 
 The second term $e^{-|a_1 - a_2|} \in (0,1]$ measures the existence of a feature in both patches and the first term $\frac{|a_1| + |a_2|}{2}$ how intense is the feature in each patch (i.e. $0$ signifies the feature does not exist). Finally, we concatenate the raw left image $X^L$ along the $d$ axis of the comparison volume, in order to save the local context.
 
 \begin{gather} \label{eq:comparison_volume}
-    C^t[d, x, y, i] = m( X^{L, t}_{desc}[x,y,i], X^{R, t}_{desc}[x-d,y, i]) \\
+    C^t[d, x, y, i] = l( X^{L, t}_{desc}[x,y,i], X^{R, t}_{desc}[x-d,y, i]) \\
     C^t \leftarrow X^{L, t} \oplus C^t
 \end{gather}
 
-\subsubsection{Module For Processing The Comparison volume - $f_2$}
+\subsubsection{Module Comparison volume Processing - $m_4$}
 
 
-\subsubsection{Multiscale Fusion Module}
+\subsubsection{Module For Multiscale Fusion - $m_5$}
 
 This module is responsible for exploiting information from different scales and merge it in a single comparison volume. The procedure takes place recursively in pairs of two, from coarse to fine scales; a coarse (low resolution) scale is getting merged with a fine (higher resolution) until the highest resolution is reached. The goal of the learnable module $f_3$ is to understand which scale includes the most reliable information and carry it forward to the next level. After multiscale fusion has been completed, the output tensor $Q^{\{t_0, t_1, \cdot \cdot \cdot, t_n\}}$, which has the same dimensions as $Q^{t_0}$, contains accumulated information from all single-scale tensors. 
 
@@ -172,7 +203,7 @@ Apart from the learnable $f_3$ module, a trilinear upsampling layer
 
 $$g_3^t: \mathbb{R}^{D \times H \times W \times K} \rightarrow \mathbb{R}^{tD \times tH \times tW \times K}$$ where $t$ represents the upsampling factor, is being used. 
 
-Equation \ref{eq:two_scale_fusion} explains how the scale $i$ is being adopted in the multiscale fusion procedure and the end-to-end explanation of the algorithm is given in \ref{alg:multi_scale_fusion}:
+Equation \ref{eq:two_scale_fusion} explains how the scale $i$ is being adopted in the multiscale fusion procedure. Algorithm \ref{alg:multi_scale_fusion} provides an end-to-end explanation of the method:
 
 \begin{equation} \label{eq:two_scale_fusion}
 Q^{ \{ t_i, \cdot \cdot \cdot, t_{n} \} } = f_3(Q^{t_i} \oplus g_3^{\sfrac{t_i}{t_{i-1}} }(Q^{ \{ t_{i-1}, \cdot \cdot \cdot, t_n \} }))
@@ -195,9 +226,12 @@ Q^{ \{ t_i, \cdot \cdot \cdot, t_{n} \} } = f_3(Q^{t_i} \oplus g_3^{\sfrac{t_i}{
 \end{algorithm}
 
 
-\subsubsection{Depth Prediction Module- $f_4$}
+\subsubsection{Module For Depth Prediction - $m_5$}
 
-The module $f_4: \mathbb{R}^{D \times H \times W \times K} \rightarrow \mathbb{R}^{D \times H \times W}$ is responsible for predicting a vector of probabilities for each possible disparity:
+The module $m_5: \mathbb{R}^{D \times H \times W \times K} \rightarrow \mathbb{R}^{D \times H \times W}$ 
+
+
+$f_4: \mathbb{R}^{D \times H \times W \times K} \rightarrow \mathbb{R}^{D \times H \times W}$ is responsible for predicting a probability for each possible disparity:
 
 \begin{equation}
 S^{\{ t_0, \cdot \cdot \cdot, t_n \}} = f_4(Q^{\{t_0, t_1, \cdot \cdot \cdot, t_n\}})    
@@ -216,14 +250,20 @@ MSNet comprises of 4 CNN modules - $f_1, f_2, f_3, f_4$, which are repeated for 
 
 \begin{equation}
 \begin{gathered} \label{eq:full_MSNet_model}
-    (X^{L,t_i}, X^{R,t_i}) = (g_1^{t_i}(X^L), g_1^{t_i}(X^R)) \\
-    (X^{L,t_i}_{desc}, X^{R,t_i}_{desc}) = (f_1(X^{L,t_i}), f_1(X^{R, t_i})) \\
-    C^{t_i} = g_2(X^{L,t_i}_{desc}, X^{R,t_i}_{desc}, X^{L,t_i}) \\
-    Q^{t_i} = f_2(C^{t_i}) \\
-    Q^{\{t_0, t_1, \cdot \cdot \cdot, t_n\}} = MultiScaleFusion(Q^{t_0}, Q^{t_1}, \cdot \cdot \cdot, Q^{t_n}) \\
-    S^{\{ t_0, \cdot \cdot \cdot, t_n \}} = f_4(Q^{\{t_0, t_1, \cdot \cdot \cdot, t_n\}}) \\
-    Y^{\{ t_0, \cdot \cdot \cdot, t_n \}} = g_4(softargmax_d(S^{\{ t_0, \cdot \cdot \cdot, t_n \}})) \\
-    
+    (X^{L,t_i}, X^{R,t_i}) = (g_1^{t_i}(X^L), g_1^{t_i}(X^R)) 
+    \\
+    (X^{L,t_i}_{desc}, X^{R,t_i}_{desc}) = (f_1(X^{L,t_i}), f_1(X^{R, t_i})) 
+    \\
+    C^{t_i} = g_2(X^{L,t_i}_{desc}, X^{R,t_i}_{desc}, X^{L,t_i}) 
+    \\
+    Q^{t_i} = f_2(C^{t_i}) 
+    \\
+    Q^{\{t_0, t_1, \cdot \cdot \cdot, t_n\}} = MultiScaleFusion(Q^{t_0}, Q^{t_1}, \cdot \cdot \cdot, Q^{t_n}) 
+    \\
+    S^{\{ t_0, \cdot \cdot \cdot, t_n \}} = f_4(Q^{\{t_0, t_1, \cdot \cdot \cdot, t_n\}}) 
+    \\
+    Y^{\{ t_0, \cdot \cdot \cdot, t_n \}} = g_4(softargmax_d(S^{\{ t_0, \cdot \cdot \cdot, t_n \}}))
+    \\
 \end{gathered}
 \end{equation}
 
