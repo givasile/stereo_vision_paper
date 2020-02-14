@@ -8,6 +8,8 @@
 \usepackage{mathtools}
 \usepackage{xfrac}
 
+\usepackage{multirow}
+
 \usepackage{algorithm}
 \usepackage{algpseudocode}
 \usepackage{ruler}
@@ -139,132 +141,130 @@ Shaked and Wolf [12] introduce an initial disparity prediction network pooling g
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Our Model}
 
-In this section we analysize the building blocks (modules) that comprise the proposed MultiScaleNetwork (MSNet). We name each module as $m_*$: its learnable parts as $f_*$ and the non-learnable ones as $g_*$. We take care so that all modules are differentiable and the backpropagation algorithm to be applicable. We can think of every module as a differentiable function that gets a tensor as input and produces another one as output. Table \ref{tab:entity_description} defines the most important tensors that intervene between the modules. Figure \ref{fig:cnn_architecture} provides a visual description of all the modules that are part of the architecture.
+In this section we analyse the building blocks (modules) that comprise the proposed MultiScaleNetwork (MSNet). We name each module as $m_i$; its learnable part as $f_i$ and the non-learnable part as $g_i$. Some modules contain only learnable parts and other only non-learnable. In all cases, the learnable parts are CNNs. All modules are differentiable so that the backpropagation algorithm to be applicable end-to-end. Figure \ref{fig:cnn_architecture} provides a visual graph of the end-to-end architecture.
 
-\subsection{Description of Modules}
 \begin{figure}[!htbp]
     \centering
-    \includegraphics[scale=0.5]{figures/stereo_architecture.png}
+    \includegraphics[width=0.7\textwidth]{figures/stereo_architecture.png}
     \caption{Scale fusion network overview. Its main constructive blocks are the horizontal pipelines (green colour) representing end-to-end predictions at specific scale $\sigma$ and the vertical pipelines (grey colour) representing the pair-scales fusion at similarity matrix level. The red-coloured blocks are the learned parts of our architecture, while the yellow coloured ones are hand-crafted layers.}
     \label{fig:cnn_architecture}
 \end{figure}
 
-\begin{table}[t]
-    \centering
-    \begin{tabular}{ l|c|c }
-    Description & Symbol & Set \rule{0pt}{2ex}\\
+% \begin{table}
+%     \centering
+%     \begin{tabular}{ l|c|c }
+%     Description & Symbol & Set \rule{0pt}{2ex}\\
     
-    \hline
-    \multicolumn{3}{c}{ \textbf{Definitions} } \rule{0pt}{2.4ex}\\
-    \hline
+%     \hline
+%     \multicolumn{3}{c}{ \textbf{Definitions} } \rule{0pt}{2.4ex}\\
+%     \hline
     
-    Raw image & $X^L, X^R$ & $\mathbb{R}^{H \times W \times 3}$ \rule{0pt}{2.5ex} \\
+%     Raw image & $X^L, X^R$ & $\mathbb{R}^{H \times W \times 3}$ \rule{0pt}{2.5ex} \\
     
-    Ground truth & $Y$ & $\mathbb{R}^{H \times W}$ \rule{0pt}{2.5ex} \\
+%     Ground truth & $Y$ & $\mathbb{R}^{H \times W}$ \rule{0pt}{2.5ex} \\
     
-    \hline
-    \multicolumn{3}{c}{ \textbf{Single-Scale 2D Processing} } \rule{0pt}{2.4ex}\\
-    \hline
+%     \hline
+%     \multicolumn{3}{c}{ \textbf{Single-Scale 2D Processing} } \rule{0pt}{2.4ex}\\
+%     \hline
     
-    Downscaled image & $X^{L,t}, X^{R, t}$ & $\mathbb{R}^{\sfrac{H}{t} \times \sfrac{W}{t} \times 3}$ \rule{0pt}{3ex} \\
+%     Downscaled image & $X^{L,t}, X^{R, t}$ & $\mathbb{R}^{\sfrac{H}{t} \times \sfrac{W}{t} \times 3}$ \rule{0pt}{3ex} \\
     
-    Descriptor image at scale $t$ & $X^{L,t}_{desc}, X^{R, t}_{desc}$ & $\mathbb{R}^{\sfrac{H}{t} \times \sfrac{W}{t} \times K}$ \rule{0pt}{3.5ex} \rule[-1.3ex]{0pt}{0pt}\\
+%     Descriptor image at scale $t$ & $X^{L,t}_{desc}, X^{R, t}_{desc}$ & $\mathbb{R}^{\sfrac{H}{t} \times \sfrac{W}{t} \times K}$ \rule{0pt}{3.5ex} \rule[-1.3ex]{0pt}{0pt}\\
     
-    \hline
-    \multicolumn{3}{c}{ \textbf{Single-Scale 3D Processing} } \rule{0pt}{2.4ex}\\
-    \hline
+%     \hline
+%     \multicolumn{3}{c}{ \textbf{Single-Scale 3D Processing} } \rule{0pt}{2.4ex}\\
+%     \hline
     
-    Comparison volume & $C^{t}$ & $ \mathbb{R}^{ \sfrac{D}{t} \times \sfrac{H}{t} \times \sfrac{W}{t} \times K } $ \rule{0pt}{3ex} \\
+%     Comparison volume & $C^{t}$ & $ \mathbb{R}^{ \sfrac{D}{t} \times \sfrac{H}{t} \times \sfrac{W}{t} \times K } $ \rule{0pt}{3ex} \\
     
-    Processed comparison volume & $Q^{t}$ & $ \mathbb{R}^{ \sfrac{D}{t} \times \sfrac{H}{t} \times \sfrac{W}{t} \times K } $ \rule{0pt}{3ex} \\
+%     Processed comparison volume & $Q^{t}$ & $ \mathbb{R}^{ \sfrac{D}{t} \times \sfrac{H}{t} \times \sfrac{W}{t} \times K } $ \rule{0pt}{3ex} \\
     
-    Similarity volume & $S^{t}$ & $ \mathbb{R}^{ \sfrac{D}{t} \times \sfrac{H}{t} \times \sfrac{W}{t}} $  \rule{0pt}{3.5ex} \\
+%     Similarity volume & $S^{t}$ & $ \mathbb{R}^{ \sfrac{D}{t} \times \sfrac{H}{t} \times \sfrac{W}{t}} $  \rule{0pt}{3.5ex} \\
     
-    Prediction image & $\hat{Y}^{t}$ & $\mathbb{R}^{H \times W}$ \rule{0pt}{3.5ex} \\
+%     Prediction image & $\hat{Y}^{t}$ & $\mathbb{R}^{H \times W}$ \rule{0pt}{3.5ex} \\
     
-    \hline
-    \multicolumn{3}{c}{ \textbf{Multi-Scale 3D Processing} } \rule{0pt}{2.4ex} \\
-    \hline
+%     \hline
+%     \multicolumn{3}{c}{ \textbf{Multi-Scale 3D Processing} } \rule{0pt}{2.4ex} \\
+%     \hline
     
-    Processed comparison volume & $Q^{ \{ t_0, ... , t_n \} }$ & $ \mathbb{R}^{ \sfrac{D}{t_0} \times \sfrac{H}{t_0} \times \sfrac{W}{t_0} \times K }  $ \rule{0pt}{3ex} \\
+%     Processed comparison volume & $Q^{ \{ t_0, ... , t_n \} }$ & $ \mathbb{R}^{ \sfrac{D}{t_0} \times \sfrac{H}{t_0} \times \sfrac{W}{t_0} \times K }  $ \rule{0pt}{3ex} \\
     
-    Similarity volume & $S^{ \{ t_0, ... , t_n \} }$ & $ \mathbb{R}^{ \sfrac{D}{t_0} \times \sfrac{H}{t_0} \times \sfrac{W}{t_0}} $ \rule{0pt}{3.5ex} \\
+%     Similarity volume & $S^{ \{ t_0, ... , t_n \} }$ & $ \mathbb{R}^{ \sfrac{D}{t_0} \times \sfrac{H}{t_0} \times \sfrac{W}{t_0}} $ \rule{0pt}{3.5ex} \\
     
-    Prediction image & $\hat{Y}^{ \{ t_0, ... , t_n \} }$ & $\mathbb{R}^{ H \times W}$ \rule{0pt}{3.5ex} \\
-    \hline
-    \end{tabular}
-    \caption{Description of all tensors involved in MSNet. All tensors follow the dimensions defined by their scale, apart from the final prediction image $\hat{Y}$. In this case, the scale (or list of scales) declares the processing scales used in the prediction. The final prediction shares always the same dimension as the raw images.}
-    \label{tab:entity_description}
-\end{table}
-\subsubsection{Module For Downscaling The Stereo Pair - $m_1^t$}
+%     Prediction image & $\hat{Y}^{ \{ t_0, ... , t_n \} }$ & $\mathbb{R}^{ H \times W}$ \rule{0pt}{3.5ex} \\
+%     \hline
+%     \end{tabular}
+%     \caption{Description of all tensors involved in MSNet. All tensors follow the dimensions defined by their scale, apart from the final prediction image $\hat{Y}$. In this case, the scale (or list of scales) declares the processing scales used in the prediction. The final prediction shares always the same dimension as the raw images.}
+%     \label{tab:entity_description}
+% \end{table}
 
-The module $m_1^t: \mathbb{R}^{H \times W} \rightarrow \mathbb{R}^{\lceil \sfrac{H}{t} \rceil \times \lceil \sfrac{W}{t} \rceil }$ creates a downscaled stereo pair, with $t$ being the factor connecting downsampling and downscaling, as defined in equations \ref{eq:t_param1}, \ref{eq:t_param2}:
+\subsubsection{Downscaling Module - $m_1^t$}
+
+The module $m_1^t: \mathbb{R}^{H \times W} \rightarrow \mathbb{R}^{\lceil \sfrac{H}{t} \rceil \times \lceil \sfrac{W}{t} \rceil }$ creates a downscaled stereo pair by being applied separately in each stereo image: 
 
 \begin{equation} \label{eq:g1}
     (X^{L,t}, X^{R,t}) = (m_1^t(X^L), m_1^t(X^R))
 \end{equation}{}
 
-Specifically, $m_1^t$ is two-step procedure; initially it convolves the stereo image $X^{\{L|R\}}$ with the following discrete Gaussian kernel:
+The parameter $t$ is the downscaling and downsampling factor, as defined in equations \ref{eq:t_param1}, \ref{eq:t_param2}. The $m_1^t$ is a two-step procedure; firstly each stereo image $X^{\{L|R\}}$ is convolved with the discrete Gaussian kernel of equation \ref{eq:g1_kernel} in order to remove the high-frequency components, and subsequently a bilinear downsampling is applied:
 
 \begin{gather} \label{eq:g1_kernel}
     k(x, y, \sigma) = \frac{1}{2\pi\sigma^2} \cdot e^{\sfrac{-(x^2 + y^2)}{2\sigma^2}} \\
     x,y \in \{-\lceil 4*\sigma + 0.5 \rceil, ..., \lceil 4*\sigma + 0.5 \rceil\}, \sigma = \sfrac{t}{3}
 \end{gather}
 
-and afterwards it applies bilinear downsampling.
+\subsubsection{Feature Extraction - $m_2$}
 
-
-\subsubsection{Module For Feature Extraction - $m_2$}
-
-The module $m_2: \mathbb{R}^{H \times W \times 3} \rightarrow \mathbb{R}^{H \times W \times K}$ extracts local features from the raw stereo images. This process is done separately each scale by a CNN ($f_2$):
+The module $m_2: \mathbb{R}^{H \times W \times 3} \rightarrow \mathbb{R}^{H \times W \times K}$ extracts local features from the raw stereo images, through a CNN $f_2$. The feature extraction process is repeated separately at each scale:
 
 \begin{equation} \label{eq:f_1}
-    (X^{L,t}_{desc}, X^{R,t}_{desc}) = (f_2(X^{L,t}), f_2(X^{R, t}))
+    m_2:(X^{L,t}_{desc}, X^{R,t}_{desc}) = (f_2(X^{L,t}), f_2(X^{R, t}))
 \end{equation} 
 
-\subsubsection{Module For Comparison Volume - $m_3$}
-
-The module $m_3:$ \\* $(\mathbb{R}^{H \times W \times K}, \mathbb{R}^{H \times W \times K}, \mathbb{R}^{H \times W \times 3}) \rightarrow \mathbb{R}^{D \times H \times W \times (K+3)}$ forms the Comparison Volume $C^t$, by zipping the comparison information into a 3D tensor. Normally, the Comparison Volume is formed by simply concatenating the descriptors in each disparity position. This approach introduces significant redundancy: from the $D \times H \times W \times 2K$ values of the tensor only the $H \times W \times 2K$ are unique. For reducing such redundancy, we design a new comparison metric between two scalar features:
+\subsubsection{Comparison Volume - $m_3$} The module $m_3$
+$$m_3:(\mathbb{R}^{H \times W \times K}, \mathbb{R}^{H \times W \times K}, \mathbb{R}^{H \times W \times 3}) \rightarrow \mathbb{R}^{D \times H \times W \times (K+3)}$$ forms the Comparison Volume $C^t$, by zipping the comparison information into a 3D tensor. Normally, the Comparison Volume is formed by simply concatenating the descriptors in each disparity position. This approach introduces significant redundancy: from the $D \times H \times W \times 2K$ values of the Comparison Volume only the $H \times W \times 2K$ are unique. For reducing such redundancy, we design a new comparison metric between two scalar features:
 
 \begin{equation} \label{eq:m}
     l: \mathbb{R}^2 \rightarrow \mathbb{R}: l(a_1, a_2) = \frac{|a_1| + |a_2|}{2} \cdot e^{-|a_1 - a_2|}    
 \end{equation}
 
+ The first term $\frac{|a_1| + |a_2|}{2}$ measures the existence of a feature in each patch separately ($0$ signifies non-existence) and the second term $e^{-|a_1 - a_2|} \in (0,1]$ measures the coexistence of the feature in both patches. Finally, we concatenate the raw left image $X^L$, in order to propagate the raw image in the subsequent layers. The formulation of the comparison volume is described in equation \ref{eq:comparison_volume}:
 
-The second term $e^{-|a_1 - a_2|} \in (0,1]$ measures the coexistence of a feature in both patches and the first term $\frac{|a_1| + |a_2|}{2}$ measures the intensity of the feature in each patch ($0$ signifies non-existence). Finally, we concatenate the raw left image $X^L$ along the $d$ axis of the comparison volume, in order to propagate the raw image in the subsequent layers. The module $m_3$ is concluded in the following two equations:
+\begin{equation}\label{eq:comparison_volume}
+C^t[d, x, y, i] = 
+    \begin{cases}
+        l( X^{L, t}_{desc}[x,y,i], X^{R, t}_{desc}[x-d,y, i]) &\quad ,i \leq K \\
+        X^{L,t}[x,y,i-K] &\quad ,i > K
+     \end{cases}
+\end{equation}{}  
 
-\begin{gather} \label{eq:comparison_volume}
-    C^t[d, x, y, i] = l( X^{L, t}_{desc}[x,y,i], X^{R, t}_{desc}[x-d,y, i]) \forall d,x,y,i\\
-    C^t \leftarrow X^{L, t} \oplus C^t
-\end{gather}
 
-\subsubsection{Module For The Processing Of The Comparison Volume - $m_4$} The module $m_4: \mathbb{R}^{D \times H \times W \times K} \rightarrow \mathbb{R}^{D \times H \times W \times K}$ is a learnable CNN ($f_4$) with 3D convolutional layers, that serves as a noise-reduction layer. It incorporates local information along all 3 dimensions (the 2 spatial ones $x,y$ and the disparity $d$) of the Comparison Volume $C^t$ and outputs a refined $Q^t$. It is applied in each scale separatelly:
+\subsubsection{Comparison Volume Processing - $m_4$} The module $m_4: \mathbb{R}^{D \times H \times W \times K} \rightarrow \mathbb{R}^{D \times H \times W \times K}$ is a CNN ($f_4$) with 3D convolutional layers, that incorporates local information along all 3 dimensions (the 2 spatial ones $x,y$ and the disparity $d$) for refining the Comparison Volume. It ouptuts a same-dimension volume $Q^t$:
 
 \begin{equation}
-    Q^t = f_4(C^t)
+    m_4: Q^t = f_4(C^t)
 \end{equation}
 
 
-\subsubsection{Module For Multiscale Fusion - $m_5$}
+\subsubsection{Multiscale Fusion - $m_5$}
 
-This module is responsible for exploiting information from different scales and combine it in a single tensor. The procedure takes place recursively in pairs of two volumes, in a sorted way from coarse to fine scales. A CNN ($f_5$) with 3D-Convolutional layers merges two comparison volumes into a single entity through the following procedure:
+This module is responsible for exploiting information from different scales and combine it in a single tensor. The procedure takes place recursively in pairs of two Comparison Volumes, from coarse to fine scales. A trilinear upsampling layer $g_3^t: \mathbb{R}^{D \times H \times W \times K} \rightarrow \mathbb{R}^{tD \times tH \times tW \times K}$ is applied to the low-dimension Comparison Volume before a CNN ($f_5$) with 3D-Convolutional layers implement the learning procedure:
 
 \begin{equation} \label{eq:two_scale_fusion}
-Q^{ \{ t_i, \cdot \cdot \cdot, t_{n} \} } = f_3(Q^{t_i} \oplus g_3^{\sfrac{t_i}{t_{i-1}} }(Q^{ \{ t_{i-1}, \cdot \cdot \cdot, t_n \} }))
+Q^{ \{ t_i, \cdot \cdot \cdot, t_{n} \} } = f_5(Q^{t_i} \oplus g_5^{\sfrac{t_i}{t_{i-1}} }(Q^{ \{ t_{i-1}, \cdot \cdot \cdot, t_n \} }))
 \end{equation}
 
-where $g_3^t: \mathbb{R}^{D \times H \times W \times K} \rightarrow \mathbb{R}^{tD \times tH \times tW \times K}$ is a trilinar upsampling layer. The module $m_5$ is explained in depth in Algorithm \ref{alg:multi_scale_fusion}.
-
+In Algorithm \ref{alg:multi_scale_fusion} we present the Multi-scale fusion method end-to-end. The upsampling and the merging procedure are applied sequentially from coarse-to-fine scale, leading to a Comparison Volume $Q^{\{t_0, t_1, \cdot \cdot \cdot, t_n\}}$ with combined information from all scales.
 
 \begin{algorithm}
-\caption{Multi-scale fusion}\label{alg:multi_scale_fusion}
+\caption{Multi-scale fusion - Module $m_5$}\label{alg:multi_scale_fusion}
 \begin{algorithmic}[1]
 \Procedure{multi scale fusion}{$ Q^{t_0}, Q^{t_1}, \cdot \cdot \cdot, Q^{t_n} $} $\rightarrow Q^{\{t_0, t_1, \cdot \cdot \cdot, t_n\}}$ 
 \State $Q \gets Q^{t_n}$ \Comment{Initialize}
 \For { \texttt{i=n-1;-1;0} }
 \State $Q \gets g_3^{\sfrac{ t_{i+1} }{ t_i } }(Q)$ \Comment{3D Upsampling}
 \State $Q \gets Q^{t_i} \oplus Q$ \Comment{Concatenation}
-\State $Q \gets f_3(Q)$ \Comment{Merge information}
+\State $Q \gets f_5(Q)$ \Comment{Merge information}
 \EndFor
 \State \Return $Q^{\{t_0, t_1, \cdot \cdot \cdot, t_n\}} \gets Q$ \Comment{Result}
 \EndProcedure
@@ -274,11 +274,11 @@ where $g_3^t: \mathbb{R}^{D \times H \times W \times K} \rightarrow \mathbb{R}^{
 
 \subsubsection{Module For Depth Prediction - $m_6$}
 
-The module $m_6^t: \mathbb{R}^{\sfrac{D}{t} \times \sfrac{H}{t} \times \sfrac{W}{t} \times K} \rightarrow \mathbb{R}^{D \times H \times W}$ implements the depth prediction. It consists of three sequential parts: (a) a CNN with 3D-convolutional layers $f_4: \mathbb{R}^{D \times H \times W \times K} \rightarrow \mathbb{R}^{D \times H \times W}$ that assigns a probability in each possible disparity $S^{\{ t_0, \cdot \cdot \cdot, t_n \}} = f_4(Q^{\{t_0, t_1, \cdot \cdot \cdot, t_n\}})$, (b) a softmax operator ($g4$), applied alond the disparity dimension, for obtaining the disparity prediction and (c) a bilinear upsampling layer ($g_5^t)$ for upsampling the disparity image in the raw-image dimensions $\hat{Y}^{\{ t_0, \cdot \cdot \cdot, t_n \}} = g_5^{t_0}(g_4(S^{\{ t_0, \cdot \cdot \cdot, t_n \}}))$.
+The module $m_6^t: \mathbb{R}^{\sfrac{D}{t} \times \sfrac{H}{t} \times \sfrac{W}{t} \times K} \rightarrow \mathbb{R}^{D \times H \times W}$ implements the depth prediction. It consists of three sequential parts: (a) a CNN with 3D-convolutional layers $f_6: \mathbb{R}^{D \times H \times W \times K} \rightarrow \mathbb{R}^{D \times H \times W}$ that assigns a probability in each possible disparity $S^{\{ t_0, \cdot \cdot \cdot, t_n \}} = f_6(Q^{\{t_0, t_1, \cdot \cdot \cdot, t_n\}})$, (b) a trilinear upsampling layer for upsampling $S$ in the initial dimensions $D \times H \times W$ and finally (c) a softmax operator applied along the disparity dimension, for obtaining the final prediction $\hat{Y}^{\{t_0, t_1, \cdot \cdot \cdot, t_n\}}$.
 
 \subsubsection{Putting all pieces together}
 
-The MSNet has 4 different learnable CNNs - $f_1, f_2, f_3, f_4$, inside the 5 modules. The modules $m_1, m_2, m_3$ operate repeatedly at each separate scale and the modules $m_4, m_5$ produce the final prediction by incorporating information from all scales. At training phase, we set the set of scales to be $T = \{ 2^2, 2^3, 2^4, 2^5 \}$. At test time, as mentioned before, the set of processing scales can change arbitrarily. For example, if the application lacks computational resources and targets to a quick depth estimation $T$ can be set to $\{ 16, 32, 64\}$, whereas if the application needs accuracy and high-resolution detail $T = \{1, 2, 4, 8, 16, 32, 64 \}$ is a better choice. In the next section, we present experimental results on how the accuracy changes among different sets of scales. The complete MSNet method can be summarized in the following steps:
+The MSNet has 4 different learnable CNNs - $f_2, f_4, f_5, f_6$, inside the 5 modules. The modules $m_1, m_2, m_3$ operate repeatedly at each separate scale and the modules $m_4, m_5$ produce the final prediction by incorporating information from all scales. At training phase, we set the set of scales to be $T = \{ 2^2, 2^3, 2^4, 2^5 \}$. At test time, as mentioned before, the set of processing scales can change arbitrarily. For example, if the application lacks computational resources and targets to a quick depth estimation $T$ can be set to $\{ 16, 32, 64\}$, whereas if the application needs accuracy and high-resolution detail $T = \{1, 2, 4, 8, 16, 32, 64 \}$ is a better choice. In the next section, we present experimental results on how the accuracy changes among different sets of scales. The complete MSNet method can be summarized in the following steps:
 
 
 \begin{algorithm}
@@ -318,14 +318,54 @@ The MSNet has 4 different learnable CNNs - $f_1, f_2, f_3, f_4$, inside the 5 mo
 % \end{equation}
 
 
-\subsection{Cnn architectures}
+\subsection*{Cnn architectures}
 
-TODO
+The learnable parts of MSNet ($f_2, f_4, f_5, f_6$) are four CNNs, that follow similar architecture. A residual connection is used as a fundamental building block in all architectures. The residual block comprises of two blocks of Batch Normalization, ReLU and Convolution in sequential order, with a residual connection added to the output. For the $f_2$, which operates on 2D inputs, the convolution is 2D (i.e. kernel with spatial dimension 3x3), whereas for $f_4, f_5, f_6$ the convolution is 3D, applied along the disparity dimension as well (kernel dimension 3x3x3). The table \ref{tab:learnable_models} summarizes the architectures used in each CNN.
+
+
+\begin{table}[!htbp]
+    \centering
+    \begin{tabular}{ c|c|c|c|c|c }
+    \textbf{Module} & \textbf{Structure} & \textbf{Input} & \textbf{Output} & \textbf{Parameters} & \textbf{Complexity} \\
+    
+    \hline
+    
+    \multirow{2}{*}{$f_2$} & BN+ReLU+Conv2D & HxWx3 & HxWx32 & \multirow{2}{*}{74592} & \multirow{2}{*}{O(HW)} \\
+    & 4xRes2D & HxWx32 & HxWx32 & &
+    \\
+
+    \hline
+
+    \multirow{2}{*}{$f_4$} & BN+ReLU+Conv3D & DxHxWx64 & DxHxWx32 & \multirow{2}{*}{196128} & \multirow{2}{*}{O(DHW)} \\
+    & 3xRes3D & DxHxWx32 & DxHxWx32 & & \\
+    
+    \hline
+    
+    \multirow{3}{*}{$f_5$} & BN+ReLU+Conv3D & DxHxWx64 & DxHxWx64 & 
+    \multirow{3}{*}{331776} & \multirow{3}{*}{O(TDHW)} \\
+    & BN+ReLU+Conv3D & DxHxWx64 & DxHxWx32 & & \\
+    & 3xRes3D & DxHxWx32 & DxHxWx32 & & \\
+
+    \hline
+    
+    \multirow{3}{*}{$f_6$} & BN+ReLU+Conv3D & DxHxWx64 & DxHxWx64 &
+    \multirow{3}{*}{139104} & \multirow{3}{*}{O(DHW)} \\
+    & 2xRes3D & DxHxWx32 & DxHxWx32 & & \\
+    & BN+ReLU+Conv3D & DxHxWx32 & DxHxW & & \\
+
+    \hline
+    MSNet & & HxWx3 & HxW & 741600 & O(TDHW) \\
+       
+    
+    \end{tabular}
+    \caption{Description of CNN architectures}
+    \label{tab:learnable_models}
+\end{table}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Experimental Evaluation}
 
-\begin{table}[t]
+\begin{table}[!htbp]
     \centering
     \begin{tabular}{ c|c|c|c|c }
     Method & Parameters (M) & Runtime & MAE & PCG \\
@@ -333,7 +373,7 @@ TODO
     \hline
     \multicolumn{5}{c}{ \textbf{Our benchmark - IMS architectures} } \\
     \hline
-    MSNet & 0.743 & 0.32 & 1.017 & 3.98 \\
+    MSNet & 0.741 & 0.32 & 1.017 & 3.98 \\
     \hline
     OneRes (S) & 0.463 & 0.11 & 1.508 & 6.11 \\
     MRes2d (S) & 0.659 & 0.10 & 1.671 & 6.98 \\
