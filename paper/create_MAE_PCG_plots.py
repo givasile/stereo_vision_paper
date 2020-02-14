@@ -55,7 +55,7 @@ hf.plot_msnet_vs_monolithic(fig_name, title, checkpoints, mae_or_pcg, tr_te_val)
 
 fig_name = 'freiburg_msnet_vs_free_weights_mae.pdf'
 title = "Synthetic Flying Dataset MAE - MSNet vs Free Weights"
-checkpoints = freiburg_last_checkpoint
+checkpoints = freiburg_standard_checkpoint
 mae_or_pcg = "mae"
 tr_te_val = "test_full"
 hf.plot_msnet_vs_free_weights(fig_name, title, checkpoints, mae_or_pcg, tr_te_val)
@@ -63,7 +63,7 @@ hf.plot_msnet_vs_free_weights(fig_name, title, checkpoints, mae_or_pcg, tr_te_va
 
 fig_name = 'freiburg_msnet_vs_free_weights_pcg.pdf'
 title = "Synthetic Flying Dataset PCG - MSNet vs Free Weights"
-checkpoints = freiburg_last_checkpoint
+checkpoints = freiburg_standard_checkpoint
 mae_or_pcg = "pcg"
 tr_te_val = "test_full"
 hf.plot_msnet_vs_free_weights(fig_name, title, checkpoints, mae_or_pcg, tr_te_val)
