@@ -36,8 +36,8 @@
 \maketitle
 
 \begin{abstract}
-Convolutional neural networks exhibit exceptional performance in predicting depth from stereo images. However, this performance comes with two essential drawbacks (a) they consume extraordinary computational power (clusters of GPUs) even for a single prediction and (b) their memory and computational demand are preset from the training phase; hence they cannot be adjusted to the available resources of each application at test time.
-For confronting these problems, we propose a scalable CNN architecture (MSNet) that adjusts to the specific requirements of each application; it can reduce its computational demands by sacrificing some precision or target for high accuracy if more resources are available. The bias towards accuracy or efficiency can be determined at test time, without any need for retraining. For achieving such scalability, we adopted the basic ideas of scale-space theory and incorporated them into the MSNet architecture.
+Convolutional neural networks exhibit exceptional performance in predicting depth from stereo images. However, this performance comes with two essential drawbacks (a) they consume extraordinary computational power (clusters of GPUs) even for a single prediction and (b) their memory and computational demand are predefined from the training phase; they cannot be adjusted to the available resources on-demand.
+For confronting these problems, we propose a scalable CNN architecture (MSNet), readjustable to the specific requirements of each application; it can reduce its computational demands by sacrificing some precision or target for high accuracy if more resources are available. The bias towards accuracy vs efficiency can be determined at test time, without any need for retraining. For achieving such scalability, we adopted the basic ideas of scale-space theory \cite{Lindeberg1994} and incorporated them into the MSNet architecture.
 MSNet exhibits challenging performance comparing to the state-of-the-art methods in the SceneFlow dataset, even though it uses considerably less learnable parameters. 
 
 \keywords{Depth Estimation, Stereo Vision, Deep Learning, Multi-Scale Processing}
@@ -51,8 +51,8 @@ Stereo vision forms a particular case of the general 3D reconstruction problem. 
 \begin{equation} \label{eq:stereo_geometry}
 z = f\frac{B}{d}
 \end{equation}
-
-where $z$ is the distance from the camera level (depth), $f$ is the focal length and $d$ is the disparity. Defining the stereo pair as $X = (X^L, X^R)$, the stereo problem demotes in finding all correspondences $X^L(x,y) \leftrightarrow X^R(x-d, y) \forall (x,y)$ which, subsequently, is treated as a patch-matching procedure. Thus, disparity estimation is based on the hypothesis that the local context of correspondent points is similar. If we define as $P^{ \{L|R\} }_{n \times n}[x,y]$ the  $n \times n$ square patch centered at $X^{ \{L|R\} }[x,y]$ and $g(\cdot)$ a metric of patch similarity, then we hope that:
+%
+where $z$ is the distance from the camera level (depth), $f$ is the focal length and $d$ is the disparity. Defining the stereo pair as $X = (X^L, X^R)$, the stereo problem demotes in finding all correspondences $X^L(x,y) \leftrightarrow X^R(x-d, y) \forall (x,y)$ which, is a patch-matching procedure. Thus, disparity estimation is based on the hypothesis that the local context of correspondent points is similar. If we define as $P^{ \{L|R\} }_{n \times n}[x,y]$ the  $n \times n$ square patch centered at $X^{ \{L|R\} }[x,y]$, $g(\cdot)$ a metric of patch similarity, and $Y[x,y]$ the ground truth disparities, then the hypothesis is:
 
 \begin{equation}
 \begin{gathered} \label{eq:similarity_hypothesis}
@@ -60,8 +60,8 @@ where $z$ is the distance from the camera level (depth), $f$ is the focal length
     \forall d \in [0,D] : d \neq d^*, \text{where $d* = Y[x,y]$}
 \end{gathered}
 \end{equation}
-
-For hypothesis \ref{eq:similarity_hypothesis} to hold, we must choose thoughtfully two critical parameters that depend on the visual properties of the reference point: (a) the size of the surrounding area that will be incorporated (b) the scale of the comparison. Multiscale analysis provides an elegant framework for handling both the above difficulties. Furthermore, it offers the mechanism for designing a scalable CNN model.
+%
+For hypothesis \ref{eq:similarity_hypothesis} to hold, we must choose thoughtfully two critical parameters that depend on the visual properties of the reference point: (a) the size of the surrounding area that will be incorporated (b) the scale of the comparison. Multiscale analysis provides an elegant framework for handling both issues. Furthermore, it offers the mechanism for designing a scalable CNN model.
 
 We define as $X^{ \{L|R\} (k,q)}$ the image obtained from $X^{ \{L|R\}} \equiv X^{ \{L|R\} (k_0=1,q_0=1)}$ through the typical downscaling process:
 
@@ -74,35 +74,33 @@ We define as $X^{ \{L|R\} (k,q)}$ the image obtained from $X^{ \{L|R\}} \equiv X
     k\geq 1, q\geq 1 
 \end{gathered}
 \end{equation}
-
+%
 The paramters $k \geq 1$ and $q \geq 1$ are the downscaling and downsampling rate. The downscaling part is performed with a low-pass filter (e.g. Gaussian kernel) and the downsampling through an interpolation method. Based on this formulation, we define a patch on a downscaled image as:
 
 \begin{gather}
     P^{ \{L|R\} (k,q)}_{n \times n}[x,y] = X^{ \{ L|R \}(k,q)} [x-n:x+n, y-n:y+n]
 \end{gather}
-
-For each reference point $[x,y]$ there is a different combination of scale $k$ and patch size $n \times n$ that leads to a thriving matching procedure. For example, regions without texture require large patch size, in order to incorporate features from neighbour objects. On the other hand, for small foreground objects, a small patch is suitable, since, in this case, background objects add noise to the comparison. This variability requires the execution of the patch matching process for various combinations of scales and patch-sizes. If we define as $K$ and $N$ the set of scales and patch sizes attempted, the computational complexity of the matching becomes $O(\| K \|, \| N \|) = \| K \| \| N \|$. For maintaining low complexity, we restrict the search space in one dimension, binding $k, n$ to a single parameter $t\geq1$:
+%
+For each reference point $[x,y]$ there is a different combination of scale $k$ and patch size $n \times n$ that leads to a succesfull matching procedure. For example, regions without texture require large patch size in order to incorporate features from neighbour objects. On the other hand, for small foreground objects, a small patch is suitable, since, in this case, background objects add noise to the comparison. This variability requires the execution of the patch matching process for various combinations of scales and patch-sizes. For keeping the complexity low, we restrict the search space in a single dimension, binding $k, n$ to one parameter $t\geq1$:
 
 \begin{gather}
     n \times n = t(n_o \times n_0) \label{eq:t_param1}\\
     k = t \label{eq:t_param2}
 \end{gather}
 
-?? Explain why this binding ??
-
-Due to the downscaling properties (i.e. removal of high-frequency details), it is feasible to downsampling the image without loss of information. Therefore, the two following patches contain similar information, even though they have different size:
+Due to the high-frequency filtering of the downscaling process, it is feasible to downsampling the image without loss of information. Therefore, the two following patches contain similar information, even though they have different size in terms of pixel:
 
 \begin{gather} \label{eq:patch_similar_information}
     P^{ \{L|R\} (k,q=1)}_{n \times n}[x,y] \approx P^{ \{L|R\} (k,q)}_{\sfrac{(n \times n)}{q}}[\lceil \sfrac{x}{q} \rceil,\lceil \sfrac{y}{q} \rceil], \forall q \leq k
 \end{gather}{}
-
+%
 Due to equation \ref{eq:patch_similar_information} it is feasible to obtain similar patch matching curves, if instead of increasing the patch size, we downsample the stereo pair:
 
 \begin{gather} \label{eq:patch_similar_information1}
      P^{ \{L|R\} (k = t, q = t)}_{(n_0 \times n_0)}[\lceil \sfrac{x}{t} \rceil, \lceil \sfrac{y}{t} \rceil] \approx P^{ \{L|R\} (k = t, q = 1)}_{t(n_0 \times n_0)}[x,y] 
 \end{gather}{}
-
-In figure \ref{fig:multiscale_importance_2D}, we design a simple artificial example to underline the importance of multiscale processing. We draw two different test cases: in the left-column scenario the fine-scale ($k=1$) with a small patch size ($n_0 \times n_0 = 5 \times 5$) leads to superior accuracy, whereas in the right-column scenario the coarse-scale ($k=t=2.6$) with larger patch size ($t(n_0 \times n_0) = 2.6(5 \times 5) =13 \times 13$) is a better fit. In both cases, the matching score curve is similar for using $ P^{ \{L|R\} (k = 2.6, q = 1)}_{13 \times 13}[x,y] $ (red curve) and $P^{ \{L|R\}, (k = 2.6, q = 2.6)}_{5 \times 5}[\lceil \sfrac{x}{2.6} \rceil, \lceil \sfrac{y}{2.6} \rceil ]$ (green curve), confirming the claim of equation \ref{eq:patch_similar_information1}.
+%
+In figure \ref{fig:multiscale_importance_2D}, we design a simple artificial example to test the aforementioned claims and to underline the importance of multiscale processing. We draw two different test cases: in the left-column scenario the fine-scale ($k=1$) with a small patch size ($n_0 \times n_0 = 5 \times 5$) leads to superior accuracy, whereas in the right-column scenario the coarse-scale ($k=t=2.6$) with larger patch size ($t(n_0 \times n_0) = 2.6(5 \times 5) =13 \times 13$) fits better. In both cases, the patch matching scores are similar for using $ P^{ \{L|R\} (k = 2.6, q = 1)}_{13 \times 13}[x,y] $ (red curve) and $P^{ \{L|R\}, (k = 2.6, q = 2.6)}_{5 \times 5}[\lceil \sfrac{x}{2.6} \rceil, \lceil \sfrac{y}{2.6} \rceil ]$ (green curve) in the comparisons.
 
 \begin{figure}[!t]
     \begin{center}
@@ -123,7 +121,6 @@ In figure \ref{fig:multiscale_importance_2D}, we design a simple artificial exam
     \label{fig:multiscale_importance_2D}
 \end{figure}
 
-!!Apart from improving the patch matching procedure, the multiscale analysis provides the tools for designing an agile CNN architecture that can be readjusted between efficiency and accuracy at test time (i.e. without repeating the training procedure). The learnable parts of the CNN can be repeated between the processing scales that are set at the test phase. Thus, if we seek for efficiency and a rough estimation of the depth, we can tune the network to operate on coarse scales; conversely, if accuracy is the priority, we can set the network to fine scales, leading to more detailed prediction.!!
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Related Work}
@@ -141,12 +138,12 @@ Shaked and Wolf [12] introduce an initial disparity prediction network pooling g
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Our Model}
 
-In this section we analyse the building blocks (modules) that comprise the proposed MultiScaleNetwork (MSNet). We name each module as $m_i$; its learnable part as $f_i$ and the non-learnable part as $g_i$. Some modules contain only learnable parts and other only non-learnable. In all cases, the learnable parts are CNNs. All modules are differentiable so that the backpropagation algorithm to be applicable end-to-end. Figure \ref{fig:cnn_architecture} provides a visual graph of the end-to-end architecture.
+In this section we analyse the building blocks (modules) that comprise the proposed MultiScaleNetwork (MSNet). Each module, named as $m_i$, is a procedure that gets a tensor as an input and produces another one as output. The learnable parts of each module are named as $f_i$ and the non-learnable ones as $g_i$. All modules are differentiable so that the backpropagation algorithm to be applicable end-to-end. Figure \ref{fig:cnn_architecture} provides a visual representation of the end-to-end architecture.
 
 \begin{figure}[!htbp]
     \centering
-    \includegraphics[width=0.7\textwidth]{figures/stereo_architecture.png}
-    \caption{Scale fusion network overview. Its main constructive blocks are the horizontal pipelines (green colour) representing end-to-end predictions at specific scale $\sigma$ and the vertical pipelines (grey colour) representing the pair-scales fusion at similarity matrix level. The red-coloured blocks are the learned parts of our architecture, while the yellow coloured ones are hand-crafted layers.}
+    \includegraphics[width=0.7\textwidth, height=8cm]{figures/stereo_architecture.png}
+    \caption{Overview of MSNet}
     \label{fig:cnn_architecture}
 \end{figure}
 
@@ -200,13 +197,13 @@ In this section we analyse the building blocks (modules) that comprise the propo
 
 \subsubsection{Downscaling Module - $m_1^t$}
 
-The module $m_1^t: \mathbb{R}^{H \times W} \rightarrow \mathbb{R}^{\lceil \sfrac{H}{t} \rceil \times \lceil \sfrac{W}{t} \rceil }$ creates a downscaled stereo pair by being applied separately in each stereo image: 
+The module $m_1^t: \mathbb{R}^{H \times W} \rightarrow \mathbb{R}^{\lceil \sfrac{H}{t} \rceil \times \lceil \sfrac{W}{t} \rceil }$ is applied separately to each stereo image for producing a downscaled stereo pair:
 
 \begin{equation} \label{eq:g1}
     (X^{L,t}, X^{R,t}) = (m_1^t(X^L), m_1^t(X^R))
 \end{equation}{}
-
-The parameter $t$ is the downscaling and downsampling factor, as defined in equations \ref{eq:t_param1}, \ref{eq:t_param2}. The $m_1^t$ is a two-step procedure; firstly each stereo image $X^{\{L|R\}}$ is convolved with the discrete Gaussian kernel of equation \ref{eq:g1_kernel} in order to remove the high-frequency components, and subsequently a bilinear downsampling is applied:
+%
+The parameter $t$ is the downscaling and downsampling factor, as defined in equations \ref{eq:t_param1}, \ref{eq:t_param2}. The module $m_1^t$ is a two-step procedure; firstly each stereo image $X^{\{L|R\}}$ is convolved with the discrete Gaussian kernel of equation \ref{eq:g1_kernel} in order to remove the high-frequency components, and afterwards the downscaling is performed with bilinear downsampling interpolation. The Gaussian kernel is chosen, since it is the unique filter that doesn't introduce unwanted patterns, while performing downscaling \cite{Lindeberg1994}.
 
 \begin{gather} \label{eq:g1_kernel}
     k(x, y, \sigma) = \frac{1}{2\pi\sigma^2} \cdot e^{\sfrac{-(x^2 + y^2)}{2\sigma^2}} \\
@@ -215,14 +212,14 @@ The parameter $t$ is the downscaling and downsampling factor, as defined in equa
 
 \subsubsection{Feature Extraction - $m_2$}
 
-The module $m_2: \mathbb{R}^{H \times W \times 3} \rightarrow \mathbb{R}^{H \times W \times K}$ extracts local features from the raw stereo images, through a CNN $f_2$. The feature extraction process is repeated separately at each scale:
+The module $m_2: \mathbb{R}^{H \times W \times 3} \rightarrow \mathbb{R}^{H \times W \times K}$ extracts local features from the raw stereo images, through a CNN ($f_2$). The feature extraction process is repeated separately at each scale:
 
 \begin{equation} \label{eq:f_1}
     m_2:(X^{L,t}_{desc}, X^{R,t}_{desc}) = (f_2(X^{L,t}), f_2(X^{R, t}))
 \end{equation} 
 
 \subsubsection{Comparison Volume - $m_3$} The module $m_3$
-$$m_3:(\mathbb{R}^{H \times W \times K}, \mathbb{R}^{H \times W \times K}, \mathbb{R}^{H \times W \times 3}) \rightarrow \mathbb{R}^{D \times H \times W \times (K+3)}$$ forms the Comparison Volume $C^t$, by zipping the comparison information into a 3D tensor. Normally, the Comparison Volume is formed by simply concatenating the descriptors in each disparity position. This approach introduces significant redundancy: from the $D \times H \times W \times 2K$ values of the Comparison Volume only the $H \times W \times 2K$ are unique. For reducing such redundancy, we design a new comparison metric between two scalar features:
+$$m_3:(\mathbb{R}^{H \times W \times K}, \mathbb{R}^{H \times W \times K}, \mathbb{R}^{H \times W \times 3}) \rightarrow \mathbb{R}^{D \times H \times W \times (K+3)}$$ forms the Comparison Volume ($C^t$), by zipping the comparison information into a 3D tensor. Normally, the Comparison Volume is formed by simply concatenating the descriptors in each disparity position. This approach introduces significant redundancy: from the $D \times H \times W \times 2K$ values of the Comparison Volume only the $H \times W \times 2K$ are unique. For reducing such redundancy, we design a new comparison metric between two scalar features:
 
 \begin{equation} \label{eq:m}
     l: \mathbb{R}^2 \rightarrow \mathbb{R}: l(a_1, a_2) = \frac{|a_1| + |a_2|}{2} \cdot e^{-|a_1 - a_2|}    
@@ -248,13 +245,11 @@ C^t[d, x, y, i] =
 
 \subsubsection{Multiscale Fusion - $m_5$}
 
-This module is responsible for exploiting information from different scales and combine it in a single tensor. The procedure takes place recursively in pairs of two Comparison Volumes, from coarse to fine scales. A trilinear upsampling layer $g_3^t: \mathbb{R}^{D \times H \times W \times K} \rightarrow \mathbb{R}^{tD \times tH \times tW \times K}$ is applied to the low-dimension Comparison Volume before a CNN ($f_5$) with 3D-Convolutional layers implement the learning procedure:
+The module $m_5$ is responsible for exploiting the information from different scales and combine it in a single tensor. The procedure takes place recursively in pairs of two Comparison Volumes, from coarse to fine scales. A trilinear upsampling layer $g_3^t: \mathbb{R}^{D \times H \times W \times K} \rightarrow \mathbb{R}^{tD \times tH \times tW \times K}$ is applied to the low-dimension Comparison Volume before a CNN ($f_5$) with 3D-Convolutional layers merge the information of the two scales into one tensor, as describe in equation \ref{eq:two_scale_fusion}. Repeating this procedure recursively as shown in algorithm \ref{alg:multi_scale_fusion} leads to a single Comparison Volume, that incorporates information from all separate scales. The implementation of the scale fusion procedure as a recursive merging is the key idea that enables our network to be readjustable on-demand.
 
 \begin{equation} \label{eq:two_scale_fusion}
 Q^{ \{ t_i, \cdot \cdot \cdot, t_{n} \} } = f_5(Q^{t_i} \oplus g_5^{\sfrac{t_i}{t_{i-1}} }(Q^{ \{ t_{i-1}, \cdot \cdot \cdot, t_n \} }))
 \end{equation}
-
-In Algorithm \ref{alg:multi_scale_fusion} we present the Multi-scale fusion method end-to-end. The upsampling and the merging procedure are applied sequentially from coarse-to-fine scale, leading to a Comparison Volume $Q^{\{t_0, t_1, \cdot \cdot \cdot, t_n\}}$ with combined information from all scales.
 
 \begin{algorithm}
 \caption{Multi-scale fusion - Module $m_5$}\label{alg:multi_scale_fusion}
@@ -274,12 +269,13 @@ In Algorithm \ref{alg:multi_scale_fusion} we present the Multi-scale fusion meth
 
 \subsubsection{Module For Depth Prediction - $m_6$}
 
-The module $m_6^t: \mathbb{R}^{\sfrac{D}{t} \times \sfrac{H}{t} \times \sfrac{W}{t} \times K} \rightarrow \mathbb{R}^{D \times H \times W}$ implements the depth prediction. It consists of three sequential parts: (a) a CNN with 3D-convolutional layers $f_6: \mathbb{R}^{D \times H \times W \times K} \rightarrow \mathbb{R}^{D \times H \times W}$ that assigns a probability in each possible disparity $S^{\{ t_0, \cdot \cdot \cdot, t_n \}} = f_6(Q^{\{t_0, t_1, \cdot \cdot \cdot, t_n\}})$, (b) a trilinear upsampling layer for upsampling $S$ in the initial dimensions $D \times H \times W$ and finally (c) a softmax operator applied along the disparity dimension, for obtaining the final prediction $\hat{Y}^{\{t_0, t_1, \cdot \cdot \cdot, t_n\}}$.
+The module $m_6^t: \mathbb{R}^{\sfrac{D}{t} \times \sfrac{H}{t} \times \sfrac{W}{t} \times K} \rightarrow \mathbb{R}^{D \times H \times W}$ implements the final disparity prediction. It consists of three sequential parts: (a) a CNN with 3D-convolutional layers $f_6: \mathbb{R}^{D \times H \times W \times K} \rightarrow \mathbb{R}^{D \times H \times W}$ that assigns a probability in each possible disparity $S^{\{ t_0, \cdot \cdot \cdot, t_n \}} = f_6(Q^{\{t_0, t_1, \cdot \cdot \cdot, t_n\}})$, (b) a trilinear upsampling layer for upsampling $S$ in the initial dimensions $D \times H \times W$ and finally (c) a softmax operator applied along the disparity dimension, for obtaining the final prediction $\hat{Y}^{\{t_0, t_1, \cdot \cdot \cdot, t_n\}}$.
 
 \subsubsection{Putting all pieces together}
 
-The MSNet has 4 different learnable CNNs - $f_2, f_4, f_5, f_6$, inside the 5 modules. The modules $m_1, m_2, m_3$ operate repeatedly at each separate scale and the modules $m_4, m_5$ produce the final prediction by incorporating information from all scales. At training phase, we set the set of scales to be $T = \{ 2^2, 2^3, 2^4, 2^5 \}$. At test time, as mentioned before, the set of processing scales can change arbitrarily. For example, if the application lacks computational resources and targets to a quick depth estimation $T$ can be set to $\{ 16, 32, 64\}$, whereas if the application needs accuracy and high-resolution detail $T = \{1, 2, 4, 8, 16, 32, 64 \}$ is a better choice. In the next section, we present experimental results on how the accuracy changes among different sets of scales. The complete MSNet method can be summarized in the following steps:
+Before the execution of a single prediction, there must be defined a set of processing scales $T = {t_0, ..., t_n}$. The modules $m_1, m_2, m_3, m_4$ operate separately on the stereo pair for producing a single scale Comparison Volume $Q^t$. Subsequently, the module $m_5$ combines the information from all single-scale volumes to a single tensor $Q^{t_0, ..., t_n}$ and the module $m_6$ makes the disparity prediction. The whole prediction procedure is summarized end-to-end in algorithm \ref{alg:MSNET}.
 
+It is important to notice that the learnable parts of our network are scale-independent; they are trained to operate independently of the specific scale of the input. This property gives the freedom to define the set of processing scales $T$ at test time, according to the needs and the computational resources of each application. A more extended experimentation of how the accuracy and the efficiency of the network varies as processing scales are added or remove is presented in the next section. 
 
 \begin{algorithm}
 \caption{MultiScaleNetwork (MSNet)}\label{alg:MSNET}
@@ -299,64 +295,43 @@ The MSNet has 4 different learnable CNNs - $f_2, f_4, f_5, f_6$, inside the 5 mo
 \end{algorithmic}
 \end{algorithm}
 
-
-% \begin{equation}
-% \begin{gathered} \label{eq:full_MSNet_model}
-%     (X^{L,t_i}, X^{R,t_i}) = (m_1^{t_i}(X^L), m_1^{t_i}(X^R)), \forall t_i \in T 
-%     \\
-%     (X^{L,t_i}_{desc}, X^{R,t_i}_{desc}) = (m_2(X^{L,t_i}), m_2(X^{R, t_i})), \forall t_i \in T 
-%     \\
-%     C^{t_i} = m_3(X^{L,t_i}_{desc}, X^{R,t_i}_{desc}, X^{L,t_i}), \forall t_i \in T 
-%     \\
-%     Q^{t_i} = m_4(C^{t_i}), \forall t_i \in T 
-%     \\
-%     Q^{\{t_0, t_1, \cdot \cdot \cdot, t_n\}} = m_5(Q^{t_0}, Q^{t_1}, \cdot \cdot \cdot, Q^{t_n}) 
-%     \\
-%     Y^{\{ t_0, \cdot \cdot \cdot, t_n \}} = m_6(Q^{\{t_0, t_1, \cdot \cdot \cdot, t_n\}}) 
-%     \\
-% \end{gathered}
-% \end{equation}
-
-
 \subsection*{Cnn architectures}
 
 The learnable parts of MSNet ($f_2, f_4, f_5, f_6$) are four CNNs, that follow similar architecture. A residual connection is used as a fundamental building block in all architectures. The residual block comprises of two blocks of Batch Normalization, ReLU and Convolution in sequential order, with a residual connection added to the output. For the $f_2$, which operates on 2D inputs, the convolution is 2D (i.e. kernel with spatial dimension 3x3), whereas for $f_4, f_5, f_6$ the convolution is 3D, applied along the disparity dimension as well (kernel dimension 3x3x3). The table \ref{tab:learnable_models} summarizes the architectures used in each CNN.
 
 
-\begin{table}[!htbp]
+\begin{table}
     \centering
-    \begin{tabular}{ c|c|c|c|c|c }
-    \textbf{Module} & \textbf{Structure} & \textbf{Input} & \textbf{Output} & \textbf{Parameters} & \textbf{Complexity} \\
+    \begin{tabular}{ c|c|c|c|c }
+    \textbf{Module} & \textbf{Structure} & \textbf{Input} & \textbf{Output} & \textbf{Parameters} \\
     
     \hline
     
-    \multirow{2}{*}{$f_2$} & BN+ReLU+Conv2D & HxWx3 & HxWx32 & \multirow{2}{*}{74592} & \multirow{2}{*}{O(HW)} \\
-    & 4xRes2D & HxWx32 & HxWx32 & &
+    \multirow{2}{*}{$f_2$} & BN+ReLU+Conv2D & HxWx3 & HxWx32 & \multirow{2}{*}{74592} \\
+    & 4xRes2D & HxWx32 & HxWx32 &
     \\
 
     \hline
 
-    \multirow{2}{*}{$f_4$} & BN+ReLU+Conv3D & DxHxWx64 & DxHxWx32 & \multirow{2}{*}{196128} & \multirow{2}{*}{O(DHW)} \\
-    & 3xRes3D & DxHxWx32 & DxHxWx32 & & \\
+    \multirow{2}{*}{$f_4$} & BN+ReLU+Conv3D & DxHxWx64 & DxHxWx32 & \multirow{2}{*}{196128} \\
+    & 3xRes3D & DxHxWx32 & DxHxWx32 & \\
     
     \hline
     
     \multirow{3}{*}{$f_5$} & BN+ReLU+Conv3D & DxHxWx64 & DxHxWx64 & 
-    \multirow{3}{*}{331776} & \multirow{3}{*}{O(TDHW)} \\
-    & BN+ReLU+Conv3D & DxHxWx64 & DxHxWx32 & & \\
-    & 3xRes3D & DxHxWx32 & DxHxWx32 & & \\
+    \multirow{3}{*}{331776}  \\
+    & BN+ReLU+Conv3D & DxHxWx64 & DxHxWx32 & \\
+    & 3xRes3D & DxHxWx32 & DxHxWx32 & \\
 
     \hline
     
     \multirow{3}{*}{$f_6$} & BN+ReLU+Conv3D & DxHxWx64 & DxHxWx64 &
-    \multirow{3}{*}{139104} & \multirow{3}{*}{O(DHW)} \\
-    & 2xRes3D & DxHxWx32 & DxHxWx32 & & \\
-    & BN+ReLU+Conv3D & DxHxWx32 & DxHxW & & \\
+    \multirow{3}{*}{139104} \\
+    & 2xRes3D & DxHxWx32 & DxHxWx32 & \\
+    & BN+ReLU+Conv3D & DxHxWx32 & DxHxW & \\
 
     \hline
-    MSNet & & HxWx3 & HxW & 741600 & O(TDHW) \\
-       
-    
+    MSNet & & HxWx3 & HxW & 741600
     \end{tabular}
     \caption{Description of CNN architectures}
     \label{tab:learnable_models}
@@ -365,7 +340,13 @@ The learnable parts of MSNet ($f_2, f_4, f_5, f_6$) are four CNNs, that follow s
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Experimental Evaluation}
 
-\begin{table}[!htbp]
+The experimental evaluation is presented in three steps; (a) we compare MSNet with the State-of-the-art models (b) we compare MSNet to similar backbones CNN architectures but with important differences, creating an internal benchmark and (c) we experiment on how MSNet behaves under different set of processing scales. All experiments are based on the synthetic SceneFlow dataset \cite{MIFDB16}.
+
+\subsection{Comparison with State-Of-The-Art models}
+
+In table \ref{tab:results}, we can compare the proposed MSNet model with the other SOTA architectures that have been proposed, in the SceneFlow dataset. We observe that MSNet achieves competitive performance (i.e. $1.017$ px of EPE compared to the $0.74$ in \cite{du2019amnet}) even though it uses much less free parameters ($0.7M$ compared to $4.37M$ parameters).
+
+\begin{table}
     \centering
     \begin{tabular}{ c|c|c|c|c }
     Method & Parameters (M) & Runtime & MAE & PCG \\
@@ -408,7 +389,7 @@ The learnable parts of MSNet ($f_2, f_4, f_5, f_6$) are four CNNs, that follow s
     \label{tab:results}
 \end{table}
 
-\begin{figure}[!htbp]
+\begin{figure}
     \begin{center}
         \includegraphics[width=0.24\textwidth,clip]{figures/imL_0.png}
         \includegraphics[width=0.24\textwidth,clip]{figures/imL_1.png}
@@ -443,9 +424,9 @@ In this section we measure the performance of the proposed method on the large s
 
 \subsection{The Effect Of Using Multi-Scale Processing Explicitly}
 
-In this section, we test whether enforcing multi-scale processing explicitly, as in MSNet, is more beneficial than using multi-scale processing internally as part of the CNN architecture. For this reason, we design 4 new CNN models that follow the MSNet designing principles, but without enforcing multi-scale processing explicitly; Instead, we use the hourglass model (i.e. encoder-decoder architecture) which is the proposed method by the literature, for applying multi-resolution processing internally. We design the following 4 architectures; OneRes operates only on the initial resolution, MRes2d uses the hourglass model only in the 2D-processing part, MRes3d only in the 3D-processing part and finally MRes2d3d in both the 2D and 3D processing part. For each of the 4 CNNs we create two versions; the small (S) version has the same number of free parameters as MSNet and the big (B) one which has as many parameters as the memory of the GPU allows. For clarity, we call all these new models with the common name Implicit Multi-Scale (IMS) architectures.
+In this section, we test whether enforcing multi-scale processing explicitly, as in MSNet, is more beneficial than using multi-scale processing internally as part of the CNN architecture. For this reason, we design 4 new CNN models that follow the MSNet designing principles, but without enforcing multi-scale processing explicitly; Instead, they follow the hourglass model (i.e. encoder-decoder architecture) which is the proposed method by the literature for applying multi-resolution processing internally. We design the following 4 architectures; OneRes operates only on the initial resolution, MRes2d uses the hourglass model only in the 2D-processing part ($f_2$), MRes3d only in the 3D-processing part ($f_4, f_5, f_6$) and finally MRes2d3d in both the 2D and 3D processing part ($f_2, f_4, f_5, f_6$). For each of the 4 CNNs we create two versions; the small (S) version with the same order of free parameters as the MSNet (approximately $600K$) and the big (B) version which has as many parameters as the memory of the GPU allows (approximately $1.6M$). For clarity, we call all these new models with the common name Implicit Multi-Scale (IMS) architectures.
 
-In figure \ref{fig:mae_SFNvsGenericNets} we observe that MSNet outperforms both versions of the IMS architectures, which is a crucial indicator that enforcing multi-scale processing explicitly is beneficial for depth estimation. As expected, big (B) networks outperform small (S) ones.
+In figure \ref{fig:mae_SFNvsGenericNets} we observe that MSNet outperforms both versions of the IMS architectures, which is an important indicator that enforcing multi-scale processing explicitly is beneficial for depth estimation. As expected, all big (B) networks outperform small (S) ones.
 
 \begin{figure}[!htbp]
     \centering
@@ -457,34 +438,32 @@ In figure \ref{fig:mae_SFNvsGenericNets} we observe that MSNet outperforms both 
 
 \subsection{What Is the Cost of Sharing Weights}
 
-MSNet is based on the idea of repeating its building blocks $f_1, f_2, f_3, f_4$ along the different scales. Following this principle, it obtains the crucial advantage of being adjustable to the application needs. An important question that arises is how much is the cost in terms of accuracy for gaining such scalability; what would be the corresponding end-point-error (EPE) if we were to apply the backbone architecture of MSNET without weight sharing (i.e. without repeating the same building blocks). For answering this question, we create a second internal benchmark, by implementing three new CNN architectures; MSNet Free2d has free weights only in the 2D-processing part (doesn't repeat $f_1$ blocks), MSNet Free3D has free weights only in the 3D-processing part (doesn't repeat $f_2, f_3, f_4$ building blocks) and, finally, MSNet Free2D3D has free weights everywhere. The results in the SceneFlow dataset are presented in figure \ref{fig:mae_SFNvsGenericNets} and in table \ref{tab:results}. We observe that repeating the 3D-processing building blocks ($f_2, f_3, f_4$) through the MultiScaleFusion algorithm leads to a suboptimal solution. Even though MSNet Free3D outperforms our proposed model, such approach cancels the scalability advantage of MSNet and is much more memory-intensive.
-
-\subsection{MSNet vs State-Of-The-Art models}
-
-In table \ref{tab:results}, we can compare the proposed MSNet model with the other SOTA architectures that have been proposed, in the SceneFlow dataset. We observe that MSNet achieves competitive performance (i.e. $1.017$ px of EPE compared to the $0.74$ in \cite{du2019amnet}) even though it uses much less free parameters ($0.7M$ compared to $4.37M$ parameters). This indicates that repeating building blocks along different scales is a beneficial designing principle, that can lead to competitive performance with smaller networks.  
+MSNet obtains its fundamental advantage of being adjustable to the application needs, by repeating its learnable-parts in the different processing scales. An important question that arises is how much is the cost in terms of accuracy for gaining such scalability; what would be the corresponding end-point-error (EPE) if we were to apply the backbone architecture of MSNET without weight sharing (i.e. without repeating the same building blocks). For answering this question, we create a second internal benchmark, by implementing three new CNN architectures; The "MSNet Free2d" has free weights only in the 2D-processing part (doesn't repeat $f_2$ blocks), "MSNet Free3D" has free weights only in the 3D-processing part (doesn't repeat $f_4, f_5, f_6$ building blocks) and, finally, MSNet Free2D3D has free weights everywhere. Since these new architectures are no longer adjustable, we predefine the processing scales to be $T = \{4, 8, 16, 32\}$. The results in the SceneFlow dataset are presented in figure \ref{fig:mae_SFNvsGenericNets} and in table \ref{tab:results}. We observe that leaving free the weights of the 3D-processing part ($f_5, f_5, f_6$) leads to better performance. This is an indicator that merging the single-scale information in pairs of two, as MultiScaleFusion algorithm does, leads to a suboptimal solution. This can be intuitively explained due to two reasons; (a) the amount of free weigths is $4x$ increased compared to MSNet and (b) MultiScaleFusion algorithm cannot gain a global view of all scales, but only in pairs of two. Even though "MSNet Free3D" outperforms our proposed model, such approach cancels the fundamental scalability advantage of MSNet.
 
 \subsection{MSNet evaluation on different scale combinations}
 
 The fundamental advantage of MSNet compared to other architectures is being able to be tuned between accuracy and efficiency at test time. In figure \ref{fig:msnet_scales_evaluation}, we measure how much the EPE of MSNet varies under using different scales. Firstly, we observe that the EPE and PCG error decreases as we add more scales. Additionaly, the standard deviation $\sigma$ of both EPE and PCG error gets smaller as we add more processing scales, which indicates that by operetaning in more scales we also gain robustness. In general terms adding coarse scales increases the robustness of our predictions, even though the mean EPE may be worse; for example $T=\{ 8 \}$ is better than $ T = \{ 16 \}$ in terms of EPE (i.e. smaller $\mu$ absolute error) but $ T = \{ 16 \}$ has smaller $\sigma$. 
 
-\begin{figure}[htbp!]
+\begin{figure}[htb!]
     \centering
-    \includegraphics[width=0.6\textwidth]{figures/msnet_scales_evaluation.pdf}
+    \includegraphics[width=0.49\textwidth]{figures/msnet_scales_evaluation.pdf}
+    \includegraphics[width=0.49\textwidth]{figures/freiburg_msnet_mae_smaller_training_set.pdf}
     \caption{MSNet accuracy for different scale combinations. On the x-axis, there are the different scale combinations (i.e. the blue area contains single-scale set-ups, the green area two-scale, the purple area three-scale and the orange area the four-scale combination that was used in the training phase). On the first row we observe the $\mu$ and $\sigma$ of the absolute end-point error and on the second row the $\mu$ and $\sigma$ of the percentage of points with end-point error over 3 pixel.}
     \label{fig:msnet_scales_evaluation}
+
 \end{figure}
 
 \subsection{Multi-Scale fusion analysis} \label{sec:4_1}
 
-In figure \ref{fig:multiscale_importance}, we show how our 3D cnn network has learned incorporating and progressively adopting fine scale predictions. We choose two points with different features; the yellow-box region contains a thin object with texture, which is appropriate for small and high-resolution patch. On the other hand, the orange-box contains a background wall with repetitive pattern, which needs a broader patch containing features from neighbourhood objects. In the orange-box scenario a small, high-resolution patch would lead to a confusion with each neighboor points. For confirming this hypothesis, we initially tune the network for single-scale predictions (i.e. right column in the graph). We can confirm that fine scale works well in the yellow-box and coarse scale in the orange-box region. On the left column, we observe the corresponding results, when the network is set to multi-scale prediction; it achieves accurate predictions in both cases, since it has learned to detect the appropriate scale and rely its prediction on it.
+In figure \ref{fig:multiscale_importance}, we show how the $f_5$ CNN has learned incorporating and progressively adopting fine scale predictions. We choose two points with different properties; the yellow-box region contains a thin object with texture, which is appropriate for small and high-resolution patch. On the other hand, the orange-box contains a background wall with repetitive pattern, which needs a broader patch containing features from neighbourhood objects. In the orange-box scenario a small, high-resolution patch would lead to a confusion with each neighboor points. For confirming this hypothesis, we initially tune the network for single-scale predictions (i.e. right column in the graph). We can confirm that fine scale works well in the yellow-box and coarse scale in the orange-box region. On the left column, we observe the corresponding results, when the network is set to multi-scale prediction; it achieves accurate predictions in both cases, since it has learned to detect the appropriate scale and rely its prediction on it.
 
 In figure \ref{fig:EMAPs} we present the predictions of the network along with the error images. We observe that initially, at the coarse scale, the network predicts a rough estimation of the depth without many details. As it operates through finer scales, it gradually adopts high-resolution details. This procedure can be seen, as a step-by-step refinement of the initial low-resolution prediction.
 
-\begin{figure}[htbp!]
+\begin{figure}[htb!]
     \begin{center}
-        \includegraphics[width=0.49\textwidth]{paper/latex/figures/multiscale_importance_image_patches.pdf}\\
-        \includegraphics[width=0.75\textwidth]{paper/latex/figures/multiscale_importance_graph_high_resolution.pdf}\\
-        \includegraphics[width=0.75\textwidth]{figures/multiscale_importance_graph_low_resolution.pdf}
+        \includegraphics[width=0.4\textwidth]{paper/latex/figures/multiscale_importance_image_patches.pdf}\\
+        \includegraphics[width=0.7\textwidth]{paper/latex/figures/multiscale_importance_graph_high_resolution.pdf}\\
+        \includegraphics[width=0.7\textwidth]{figures/multiscale_importance_graph_low_resolution.pdf}
     \end{center}
     
     \caption{In this figure, we compare two regions of the same image that require processing on different scale. The centre point of the yellow rectangle is a small object on the foreground with many features (i.e. handle of a knife), whilst the orange one represents a background area inside a repetitive pattern. The first column of graphs represents the Multi-Scale similarity volumes $S^{\{ \sigma_0, ..., \sigma_n \} }$ The graphs prove that, as we expected, disparity estimation is accurate on higher scale for the yellow rectangle and on t As expected,  }
@@ -495,13 +474,6 @@ In figure \ref{fig:EMAPs} we present the predictions of the network along with t
 \subsection{MSNet evaluation on smaller training set}
 
 In figure \ref{fig:msnet_smaller_tr_set}, we present MSNet performance under training set of different size. As expected, the accuracy increases as the model observes more training data.
-
-\begin{figure}[htbp!]
-    \centering
-    \includegraphics[width=0.45\textwidth]{figures/freiburg_msnet_mae_smaller_training_set.pdf}
-    \caption{Caption}
-    \label{fig:msnet_smaller_tr_set}
-\end{figure}
 
 \section{Conclusion and Future Work}
 
