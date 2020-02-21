@@ -38,7 +38,7 @@ results = np.array(results)
 
 # plot
 fig, ax = plt.subplots(1, 2, sharex='all')
-fig.suptitle("MSNet evaluation using different combinations of scales")
+# fig.suptitle("MSNet evaluation using different combinations of scales")
 
 # first row of plots
 ax[0].plot(results[:,0], 'ro')
