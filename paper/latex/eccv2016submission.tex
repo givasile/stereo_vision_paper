@@ -23,7 +23,7 @@
 \mainmatter
 \def\ECCV16SubNumber{***}  % Insert your submission number here
 
-\title{Incorporating Multi-Scale Analysis For Depth Estimation} % Replace with your title
+\title{Reinforcing Multi-Scale Analysis For Depth Estimation} % Replace with your title
 
 \titlerunning{ECCV-16 submission ID \ECCV16SubNumber}
 
@@ -388,7 +388,7 @@ In table \ref{tab:results}, we can compare the proposed MSNet model with the oth
 
 In this section we measure the performance of the proposed method on the large synthetic SceneFlow dataset. Table \ref{tab:results} presents the aggregated results of our experiments and figure \ref{fig:EMAPs} the results on a single training example.
 
-\subsection{The Effect Of Using Multi-Scale Processing Explicitly}
+\subsection{The Effect Of Reinforcing Multi-Scale Processing}
 
 In this section, we test whether enforcing multi-scale processing explicitly, as in MSNet, is more beneficial than using multi-scale processing internally as part of the CNN architecture. For this reason, we design 4 new CNN models that follow the MSNet designing principles, but without enforcing multi-scale processing explicitly; Instead, they follow the hourglass model (i.e. encoder-decoder architecture) which is the proposed method by the literature for applying multi-resolution processing internally. We design the following 4 architectures; OneRes operates only on the initial resolution, MRes2d uses the hourglass model only in the 2D-processing part ($f_2$), MRes3d only in the 3D-processing part ($f_4, f_5, f_6$) and finally MRes2d3d in both the 2D and 3D processing part ($f_2, f_4, f_5, f_6$). For each of the 4 CNNs we create two versions; the small (S) version with the same order of free parameters as the MSNet (approximately $600K$) and the big (B) version which has as many parameters as the memory of the GPU allows (approximately $1.6M$). For clarity, we call all these new models with the common name Implicit Multi-Scale (IMS) architectures.
 
@@ -408,13 +408,13 @@ MSNet obtains its fundamental advantage of being adjustable to the application n
 
 \subsection{MSNet evaluation on different scale combinations}
 
-The fundamental advantage of MSNet compared to other architectures is being able to be tuned between accuracy and efficiency at test time. In figure \ref{fig:msnet_scales_evaluation}, we measure how much the EPE of MSNet varies under using different scales. Firstly, we observe that the EPE and PCG error decreases as we add more scales. Additionaly, the standard deviation $\sigma$ of both EPE and PCG error gets smaller as we add more processing scales, which indicates that by operetaning in more scales we also gain robustness. In general terms adding coarse scales increases the robustness of our predictions, even though the mean EPE may be worse; for example $T=\{ 8 \}$ is better than $ T = \{ 16 \}$ in terms of EPE (i.e. smaller $\mu$ absolute error) but $ T = \{ 16 \}$ has smaller $\sigma$. 
+The fundamental advantage of MSNet compared to other architectures is the ability to be tuned between accuracy and efficiency at test time. In figure \ref{fig:msnet_scales_evaluation}, we measure how much the EPE of MSNet varies under using different scales. Firstly, we observe that the EPE and PCG error decreases as we add more scales. Additionaly, the standard deviation $\sigma$ of both EPE and PCG error gets smaller as we add more processing scales, which indicates that by operetaning in more scales we also gain robustness. In general terms adding coarse scales increases the robustness of our predictions, even though the mean EPE may be worse; for example $T=\{ 8 \}$ is better than $ T = \{ 16 \}$ in terms of EPE (i.e. smaller $\mu$ absolute error) but $ T = \{ 16 \}$ has smaller $\sigma$.
 
 \begin{figure}[htb!]
     \centering
-    \includegraphics[width=0.49\textwidth]{figures/msnet_scales_evaluation.pdf}
-    \includegraphics[width=0.49\textwidth]{figures/freiburg_msnet_mae_smaller_training_set.pdf}
-    \caption{MSNet accuracy for different scale combinations. On the x-axis, there are the different scale combinations (i.e. the blue area contains single-scale set-ups, the green area two-scale, the purple area three-scale and the orange area the four-scale combination that was used in the training phase). On the first row we observe the $\mu$ and $\sigma$ of the absolute end-point error and on the second row the $\mu$ and $\sigma$ of the percentage of points with end-point error over 3 pixel.}
+    \includegraphics[width=0.7\textwidth]{figures/msnet_scales_evaluation.pdf}
+    % \includegraphics[width=0.49\textwidth]{figures/freiburg_msnet_mae_smaller_training_set.pdf}
+    \caption{(Left) MSNet accuracy for different scale combinations. On the x-axis, there are the different scale combinations (i.e. the blue area contains single-scale set-ups, the green area two-scale, the purple area three-scale and the orange area the four-scale combination that was used in the training phase). On the first row we observe the $\mu$ and $\sigma$ of the absolute end-point error and on the second row the $\mu$ and $\sigma$ of the percentage of points with end-point error over 3 pixel.}
     \label{fig:msnet_scales_evaluation}
 
 \end{figure}
@@ -428,8 +428,8 @@ In figure \ref{fig:EMAPs} we present the predictions of the network along with t
 \begin{figure}[htb!]
     \begin{center}
         \includegraphics[width=0.4\textwidth]{paper/latex/figures/multiscale_importance_image_patches.pdf}\\
-        \includegraphics[width=0.7\textwidth]{paper/latex/figures/multiscale_importance_graph_high_resolution.pdf}\\
-        \includegraphics[width=0.7\textwidth]{figures/multiscale_importance_graph_low_resolution.pdf}
+        \includegraphics[width=0.8\textwidth]{paper/latex/figures/multiscale_importance_graph_high_resolution.pdf}\\
+        \includegraphics[width=0.8\textwidth]{figures/multiscale_importance_graph_low_resolution.pdf}
     \end{center}
     
     \caption{In this figure, we compare two regions of the same image that require processing on different scale. The centre point of the yellow rectangle is a small object on the foreground with many features (i.e. handle of a knife), whilst the orange one represents a background area inside a repetitive pattern. The first column of graphs represents the Multi-Scale similarity volumes $S^{\{ \sigma_0, ..., \sigma_n \} }$ The graphs prove that, as we expected, disparity estimation is accurate on higher scale for the yellow rectangle and on t As expected,  }
@@ -437,15 +437,12 @@ In figure \ref{fig:EMAPs} we present the predictions of the network along with t
 \end{figure}
 
 
-\subsection{MSNet evaluation on smaller training set}
-
-In figure \ref{fig:msnet_smaller_tr_set}, we present MSNet performance under training set of different size. As expected, the accuracy increases as the model observes more training data.
-
 \section{Conclusion and Future Work}
 
-In this paper we proposed a scalable CNN, that can be adjusted to the needs of each application; it can be tuned for efficiency or accuracy, without finetuning. For achieving this agility, we exploited the key ideas of multiscale analysis, by training a processing module once and then apply it along the different scales.  We also saw that designing a CNN architecture that explicitly enforces multiscale processing, leads to superior performance by using less learnable parameters. Our method exhibits competitive results compared to the State-of-the-art methods in the SceneFlow dataset, even though it is a much smaller network.
+In this paper, we proposed a scalable CNN model, that can be tuned for efficiency or accuracy according to the requirements of each architecture. For achieving this agility, we exploited the critical ideas of multi-scale analysis; we designed scale-independent tasks (feature extraction, merging multi-scale information in couples etc.) and we trained the learnable parts of our model in these tasks. Thus, the processing scales can be defined at test time. We showed that in general terms, two rules hold; (a) as we add processing scales the accuracy increases and the efficiency drops (b) coarse scales, which are computationally cheap, produce only rough estimations of the disparity image, whereas higher resolutions, which are much more expensive, they add fine-details in the prediction. We also observed that reinforcing multi-scale processing explicitly leads to superior performance compared to the models that enable multi-scale implicitly. Finally, our method exhibits competitive results compared to the State-of-the-art methods in the SceneFlow dataset, even though it involves much less learnable parameters.
 
-Still, there are some open questions to be examined in the future. Firstly, as we explored experimentally, our recursive method for incorporating information from all different scales, even though it is fundamental for keeping the model fully scalable, it is suboptimal in terms of accuracy. Furthermore, our method can be reformed in an unsupervised problem by ... Finally, search for the appropriate scale based on the properties of the image...   
+There are, of course, some open questions to be examined in the future. Firstly, as we explored experimentally, our method of merging the different scales in pairs of two leads to inferior performance compared to a 3D CNN that observes all scales simultaneously. Unfortunately the latter approach removes the critical agility, restricting the processing scales in a predefined set. A future research work could examine the ways of a possible compromise between this circumstance. Furthermore, our method can also be checked under a self-supervised setting or in monocular depth prediction by substituting the disparity estimation error with the reprojection error. Finally, we proposed that the most significant advantage of our method is the ability to define the processing scales at test time.  Nevertheless, we have no specific indication for answering the two critical questions; (a) how many and (b) which specific scales to use according to the properties of the stereo pair. Hence, the scale specification depends upon how many computational resources we have available and how efficient prediction we need. However, since the correct processing scales depend on the qualitative characteristics of the stereo pair, we can search for methods that could automate the scale selection.
+
 \clearpage
 \bibliographystyle{splncs}
 \bibliography{egbib}
