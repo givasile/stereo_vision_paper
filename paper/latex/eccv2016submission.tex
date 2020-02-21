@@ -125,15 +125,24 @@ In figure \ref{fig:multiscale_importance_2D}, we design a simple artificial exam
 
 \section{Related Work}
 
-Reconstructing the three dimensional geometry from a set of $2D$ images is a core problem of computer vision. Stereo reconstruction is a predominant technique of the aforementioned domain and has been heavily studied over years \cite{Barnard1982ComputationalStereo},\cite{Brown2003}. Scharstein and Szeliski \cite{Scharstein2001AAlgorithms} propose a general taxonomy framework for describing and analysing any stereo vision algorithm in four steps: matching cost computation, cost aggregation, disparity computation/optimisation and disparity refinement.
+Stereo reconstruction, as a core problem of computer vision, has been heavily studied over the last decades \cite{Barnard1982ComputationalStereo},\cite{Brown2003}. Scharstein and Szeliski \cite{Scharstein2001AAlgorithms} provided a generic taxonomy of the stereo vision methods based on their approach to the four fundamental tasks: (a) matching cost computation (b) cost aggregation (c) disparity computation/optimisation and (d) disparity refinement.
 
-The matching cost computation realises a dissimilarity measurement between each pixel on reference image and all possible corresponding locations. Quite a lot of metrics of dissimilarity have been proposed, including  absolute difference, squared difference, cross correlation and hamming distance. Dissimilarity metrics can be applied on many different local descriptors, such as LoG, CENSUS \cite{Zabih1996ACorrespondence} and BRIEF \cite{Calonder2010}. Mutual Information \cite{Viola1997} proposes a rather different metric based on the entropy of histograms of correnspondent locations. An extensive evaluation of different matching cost computation strategies has been proposed by \cite{Hirschmuller2007}. Initial matching costs are error prone due to the intense locality of information. Initial estimates need to get optimized by methods taking into account global image information. This can be accomplished through graph cuts \cite{Kolmogorov}, \cite{Boykov2001} and belief propagation \cite{Klaus2006}. Semi-Global-Matching (SGM) \cite{Hirschmuller2008StereoInformation} attempts to minimize a global energy function.
+Up until recently, most methods relied on hand-engineered features for solving the matching cost and disparity computation problems. There have been proposed many different dissimilarity metrics, such as LoG, CENSUS \cite{Zabih1996ACorrespondence} and BRIEF \cite{Calonder2010}. The Graph Cut \cite{Kolmogorov}, \cite{Boykov2001} and belief propagation \cite{Klaus2006} methods managed to incorporate broader information in the final prediction. Hirschmuller minimised a global energy function with the Semi-Global-Matching (SGM) method \cite{Hirschmuller2008StereoInformation}. Geiger et. al \cite{Geiger2011EfficientMatching} attempted a Bayesian approach, using a prior distribution of the disparity image based on some robustly matched points.
 
-Stereo vision methods are evaluated on datasets containing ground truth depth or disparity for stereo pairs. Middlebury \cite{Scharstein2014} contains indoor scenes. KITTI \cite{Menze2015ISA}, \cite{Menze2018JPRS} is a larger dataset with outdoor scenes and ground truth labels collected from LIDAR on a moving vehicle. Mayer et. al \cite{Mayer2016ALD} created a big synthetic dataset for training big machine learning models.
+Zagoruyko and Komodakis introduced the use of CNNs for comparing image patches \cite{zagoruyko2015learning}. Zbontar and LeCun \cite{Zbontar_2015_CVPR} used a similar CNN for computing the matching cost. They trained A binary CNN classifier to predict whether two patches correspond to the same 3D point. Their complete method, which involved some non-learnable methods as well (SGM), achieved state-of-the-art performance in the two well-known stereo datasets Middlebury \cite{Scharstein2014} and KITTI \cite{Menze2015ISA}. Luo et. al \cite{luo2016efficient} achieved comparable accuracy with a much faster implementation, by treating the matching cost as a multi-label classification problem. For the disparity refinement task, Shaked and Wolf \cite{shaked2017improved} proposed a disparity network which refined the initial disparity predictions, using confidence scores. Gidaris and Komodakis \cite{Gidaris2017DetectLabeling} proposed a CNN with three separate parts (Detect, Replace, Refine) for computing a refined disparity image. Seki and Pollefeys implemented a neural network version of the SGM algorithm, which learned from the data the penalty-scores of the discontinuities in the disparity map. 
 
-Deep convolutional networks show great success on stereo vision problems. Intial deep learning proposals focused on matching cost compuation. Zagoruyko et. al \cite{Zagoruyko2015LearningNetworks} proposed a deep convolutional neural network for comparing image patches. \v{Z}bontar and LeCun \cite{Zbontar_2015_CVPR} trained a deep network for predicting the initial matching scores on $9x9$ image patches, followed by traditional aggregation and refinement methods. Luo et. al \cite{Luo2016EfficientMatching} treated matching scores estimation as a multi-label classification problem.
+All the approaches mentioned above used a CNN method for solving a particular subtask of the disparity estimation. On the contrary, Mayer et al. \cite{Mayer2016ALD} implemented an end-to-end CNN architecture (DispNet) for disparity estimation. The architecture included a contracting and an expanding part before making the final prediction. Apart from the proposed model, he also introduced a new synthetic dataset (SceneFlow) with approximately 35000 stereo images. Kendall et al. \cite{Kendall2017End-to-EndRegression} adjusted their architecture to the stereo vision geometry, by forming explicitly the Cost Matrix. They achieved that by introducing two novelities; (a) a 3D-convolutional network for processing the cost matrix and (b) a differentiable soft-argmin operator for the disparity estimation. 
 
-Shaked and Wolf [12] introduce an initial disparity prediction network pooling global information from cost volume
+Having achieved to formulate the stereo vision problem with an end-to-end CNN architecture, many works focused on exploiting semantic and context information in the disparity estimation. For this reason, it was widely used the encoder-decoder architecture with residual connections, which contains many downscaling and upscaling layers.
+
+Chang et al. \cite{Chang2018PyramidNetwork} designed a Spatial Pyramid Pooling (SPP) architecture for incorporating global information by aggregating context from different scales in the formation of the Cost Matrix. The Cost Matrix was then processed by a stacked-hourglass architecture (encoder-decoder structure). The Cascade Residual Network \cite{Pang2018CascadeMatching} has two subsequent stack-hourglass CNNs. The first one produces an initial disparity prediction that is used for warping the reference image and thus estimate an initial (unsupervised) error. Afterwards, the second CNN exploits this estimate for computing a refined prediction.  
+
+EdgeStereo \cite{SongEdgeStereoResidual} focuses on the fine details that appear mainly around edges. Noticing that this area is error-prone due to occlusions, the network produces an edge-map which subsequently used for measuring an edge-aware smoothness loss.
+
+DeepPruner \cite{du2019amnet} focuses on speeding-up the inference time by excluding some disparities and formulating a reduced Cost Matrix. This approach decreases the Search Space drastically and leads to an efficient prediction.
+
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Our Model}
@@ -147,53 +156,6 @@ In this section we analyse the building blocks (modules) that comprise the propo
     \label{fig:cnn_architecture}
 \end{figure}
 
-% \begin{table}
-%     \centering
-%     \begin{tabular}{ l|c|c }
-%     Description & Symbol & Set \rule{0pt}{2ex}\\
-    
-%     \hline
-%     \multicolumn{3}{c}{ \textbf{Definitions} } \rule{0pt}{2.4ex}\\
-%     \hline
-    
-%     Raw image & $X^L, X^R$ & $\mathbb{R}^{H \times W \times 3}$ \rule{0pt}{2.5ex} \\
-    
-%     Ground truth & $Y$ & $\mathbb{R}^{H \times W}$ \rule{0pt}{2.5ex} \\
-    
-%     \hline
-%     \multicolumn{3}{c}{ \textbf{Single-Scale 2D Processing} } \rule{0pt}{2.4ex}\\
-%     \hline
-    
-%     Downscaled image & $X^{L,t}, X^{R, t}$ & $\mathbb{R}^{\sfrac{H}{t} \times \sfrac{W}{t} \times 3}$ \rule{0pt}{3ex} \\
-    
-%     Descriptor image at scale $t$ & $X^{L,t}_{desc}, X^{R, t}_{desc}$ & $\mathbb{R}^{\sfrac{H}{t} \times \sfrac{W}{t} \times K}$ \rule{0pt}{3.5ex} \rule[-1.3ex]{0pt}{0pt}\\
-    
-%     \hline
-%     \multicolumn{3}{c}{ \textbf{Single-Scale 3D Processing} } \rule{0pt}{2.4ex}\\
-%     \hline
-    
-%     Comparison volume & $C^{t}$ & $ \mathbb{R}^{ \sfrac{D}{t} \times \sfrac{H}{t} \times \sfrac{W}{t} \times K } $ \rule{0pt}{3ex} \\
-    
-%     Processed comparison volume & $Q^{t}$ & $ \mathbb{R}^{ \sfrac{D}{t} \times \sfrac{H}{t} \times \sfrac{W}{t} \times K } $ \rule{0pt}{3ex} \\
-    
-%     Similarity volume & $S^{t}$ & $ \mathbb{R}^{ \sfrac{D}{t} \times \sfrac{H}{t} \times \sfrac{W}{t}} $  \rule{0pt}{3.5ex} \\
-    
-%     Prediction image & $\hat{Y}^{t}$ & $\mathbb{R}^{H \times W}$ \rule{0pt}{3.5ex} \\
-    
-%     \hline
-%     \multicolumn{3}{c}{ \textbf{Multi-Scale 3D Processing} } \rule{0pt}{2.4ex} \\
-%     \hline
-    
-%     Processed comparison volume & $Q^{ \{ t_0, ... , t_n \} }$ & $ \mathbb{R}^{ \sfrac{D}{t_0} \times \sfrac{H}{t_0} \times \sfrac{W}{t_0} \times K }  $ \rule{0pt}{3ex} \\
-    
-%     Similarity volume & $S^{ \{ t_0, ... , t_n \} }$ & $ \mathbb{R}^{ \sfrac{D}{t_0} \times \sfrac{H}{t_0} \times \sfrac{W}{t_0}} $ \rule{0pt}{3.5ex} \\
-    
-%     Prediction image & $\hat{Y}^{ \{ t_0, ... , t_n \} }$ & $\mathbb{R}^{ H \times W}$ \rule{0pt}{3.5ex} \\
-%     \hline
-%     \end{tabular}
-%     \caption{Description of all tensors involved in MSNet. All tensors follow the dimensions defined by their scale, apart from the final prediction image $\hat{Y}$. In this case, the scale (or list of scales) declares the processing scales used in the prediction. The final prediction shares always the same dimension as the raw images.}
-%     \label{tab:entity_description}
-% \end{table}
 
 \subsubsection{Downscaling Module - $m_1^t$}
 
@@ -302,6 +264,7 @@ The learnable parts of MSNet ($f_2, f_4, f_5, f_6$) are four CNNs, that follow s
 
 \begin{table}
     \centering
+    \resizebox{0.75\textwidth}{!}{
     \begin{tabular}{ c|c|c|c|c }
     \textbf{Module} & \textbf{Structure} & \textbf{Input} & \textbf{Output} & \textbf{Parameters} \\
     
@@ -333,6 +296,7 @@ The learnable parts of MSNet ($f_2, f_4, f_5, f_6$) are four CNNs, that follow s
     \hline
     MSNet & & HxWx3 & HxW & 741600
     \end{tabular}
+    }
     \caption{Description of CNN architectures}
     \label{tab:learnable_models}
 \end{table}
@@ -348,6 +312,7 @@ In table \ref{tab:results}, we can compare the proposed MSNet model with the oth
 
 \begin{table}
     \centering
+    \resizebox{0.5\textwidth}{!}{%
     \begin{tabular}{ c|c|c|c|c }
     Method & Parameters (M) & Runtime & MAE & PCG \\
     
@@ -384,37 +349,38 @@ In table \ref{tab:results}, we can compare the proposed MSNet model with the oth
     AMNet\cite{du2019amnet} & 4.37 & - & \textbf{0.74} & - \\
     
     \hline
-    \end{tabular}
+    \end{tabular}%
+    }
     \caption{Model comparison on SceneFlow dataset}
     \label{tab:results}
 \end{table}
 
 \begin{figure}
     \begin{center}
-        \includegraphics[width=0.24\textwidth,clip]{figures/imL_0.png}
-        \includegraphics[width=0.24\textwidth,clip]{figures/imL_1.png}
-        \includegraphics[width=0.24\textwidth,clip]{figures/imL_2.png}
-        \includegraphics[width=0.24\textwidth,clip]{figures/imL_3.png}
+        \includegraphics[width=0.24\textwidth,height=0.1\textwidth,clip]{figures/imL_0.png}
+        \includegraphics[width=0.24\textwidth,height=0.1\textwidth,clip]{figures/imL_1.png}
+        \includegraphics[width=0.24\textwidth,height=0.1\textwidth,clip]{figures/imL_2.png}
+        \includegraphics[width=0.24\textwidth,height=0.1\textwidth,clip]{figures/imL_3.png}
         \\
-        \includegraphics[width=0.24\textwidth,clip]{figures/pred_0.png}
-        \includegraphics[width=0.24\textwidth,clip]{figures/pred_1.png}
-        \includegraphics[width=0.24\textwidth,clip]{figures/pred_2.png}
-        \includegraphics[width=0.24\textwidth,clip]{figures/pred_3.png}
+        \includegraphics[width=0.24\textwidth,height=0.1\textwidth,clip]{figures/pred_0.png}
+        \includegraphics[width=0.24\textwidth,height=0.1\textwidth,clip]{figures/pred_1.png}
+        \includegraphics[width=0.24\textwidth,height=0.1\textwidth,clip]{figures/pred_2.png}
+        \includegraphics[width=0.24\textwidth,height=0.1\textwidth,clip]{figures/pred_3.png}
         \\
-        \includegraphics[width=0.24\textwidth,clip]{figures/pred_0_err.png}
-        \includegraphics[width=0.24\textwidth,clip]{figures/pred_1_err.png}
-        \includegraphics[width=0.24\textwidth,clip]{figures/pred_2_err.png}
-        \includegraphics[width=0.24\textwidth,clip]{figures/pred_3_err.png}
+        \includegraphics[width=0.24\textwidth,height=0.1\textwidth,clip]{figures/pred_0_err.png}
+        \includegraphics[width=0.24\textwidth,height=0.1\textwidth,clip]{figures/pred_1_err.png}
+        \includegraphics[width=0.24\textwidth,height=0.1\textwidth,clip]{figures/pred_2_err.png}
+        \includegraphics[width=0.24\textwidth,height=0.1\textwidth,clip]{figures/pred_3_err.png}
         \\
-        \includegraphics[width=0.24\textwidth,clip]{figures/pred_comb_0.png}
-        \includegraphics[width=0.24\textwidth,clip]{figures/pred_comb_1.png}
-        \includegraphics[width=0.24\textwidth,clip]{figures/pred_comb_2.png}
-        \includegraphics[width=0.24\textwidth,clip]{figures/pred_comb_3.png}
+        \includegraphics[width=0.24\textwidth,height=0.1\textwidth,clip]{figures/pred_comb_0.png}
+        \includegraphics[width=0.24\textwidth,height=0.1\textwidth,clip]{figures/pred_comb_1.png}
+        \includegraphics[width=0.24\textwidth,height=0.1\textwidth,clip]{figures/pred_comb_2.png}
+        \includegraphics[width=0.24\textwidth,height=0.1\textwidth,clip]{figures/pred_comb_3.png}
         \\
-        \includegraphics[width=0.24\textwidth,clip]{figures/pred_comb_0_err.png}
-        \includegraphics[width=0.24\textwidth,clip]{figures/pred_comb_1_err.png}
-        \includegraphics[width=0.24\textwidth,clip]{figures/pred_comb_2_err.png}
-        \includegraphics[width=0.24\textwidth,clip]{figures/pred_comb_3_err.png}
+        \includegraphics[width=0.24\textwidth,height=0.1\textwidth,clip]{figures/pred_comb_0_err.png}
+        \includegraphics[width=0.24\textwidth,height=0.1\textwidth,clip]{figures/pred_comb_1_err.png}
+        \includegraphics[width=0.24\textwidth,height=0.1\textwidth,clip]{figures/pred_comb_2_err.png}
+        \includegraphics[width=0.24\textwidth,height=0.1\textwidth,clip]{figures/pred_comb_3_err.png}
     \end{center}
     \caption{Analytic illustration of a prediction process. The first row (left to right) contains the left image along all scales $X^{L,t} : t \in \{2^2, 2^3, 2^4, 2^5\}$. The second and third row contain the single scale predictions $\hat{Y}^{L,t}$ and the corresponding error images $E^{L,t}$. The fourth and fifth row contains the multiscale predictions (processing scales are added as we move from right to left) and the corresponding error images. We can observe the limitations of single-scale predictions; coarse scales fail in describing the details between objects while fine scales suffer from instabilities. On the other hand, the multiscale prediction combines the benefits of both worlds; it starts with a rough estimation of the disparity image and it adds higher-resolution details as it visits fine scales.}
     \label{fig:EMAPs}
