@@ -67,7 +67,7 @@ def plot(fig_name, title, mae_or_pcg, tr_te_val):
 
         ax.plot(x, y, hf.coloring[cnn_name] + '-o', label=hf.labeling[cnn_name])
 
-    fig.suptitle(title)
+    # fig.suptitle(title)
     ax.set_ylabel("pixels") if mae_or_pcg == "mae" else ax.set_ylabel("pcg")
     ax.set_xlabel("pcg of training set ")
     ax.legend()

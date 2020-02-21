@@ -55,7 +55,7 @@ def plot(fig_name, title, mae_or_pcg, tr_te_val):
     add_plot(freiburg_last_checkpoint_27, "70%")
     add_plot(freiburg_standard_checkpoint_1, "100%", 'r-o')
 
-    fig.suptitle(title)
+    # fig.suptitle(title)
     ax.set_ylabel("pixels") if mae_or_pcg == "mae" else ax.set_ylabel("pcg")
     ax.set_xlabel("training epoch")
     ax.legend()

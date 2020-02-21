@@ -130,7 +130,7 @@ def plot_msnet_vs_monolithic(fig_name, title, checkpoints, mae_or_pcg, tr_te_val
                 ax[0].plot(x, y, coloring[cnn_name] + '-o', label=labeling[cnn_name])
                 ax[1].plot(x, y, coloring[cnn_name] + '-o', label=labeling[cnn_name])
 
-    fig.suptitle(title)
+    # fig.suptitle(title)
     ax[0].set_ylabel("pixels") if mae_or_pcg == "mae" else ax[0].set_ylabel("pcg")
     fig.text(0.5, 0.02, 'epoch', ha='center')
     ax[0].legend()
@@ -162,7 +162,7 @@ def plot_msnet_vs_free_weights(fig_name, title, checkpoints, mae_or_pcg, tr_te_v
             x = np.arange(1, len(y) + 1)
             ax.plot(x, y, coloring[cnn_name] + '-o', label = labeling[cnn_name])
 
-    fig.suptitle(title)
+    # fig.suptitle(title)
     ax.set_ylabel("pixels") if mae_or_pcg == "mae" else ax.set_ylabel("pcg")
     ax.set_xlabel("epoch")
     ax.legend()
