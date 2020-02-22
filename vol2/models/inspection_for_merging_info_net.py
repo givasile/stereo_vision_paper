@@ -3,20 +3,19 @@ import importlib
 import os
 import sys
 import timeit
-
 import torch
 
 # configuration
 cnn_name: str = 'merging_info_net_custom_features_free_2d_weights'
 
-experiment_n = 1
-checkpoint_n = 15
+experiment_n = 2
+checkpoint_n = 1
 which = 'train'
 form = 'full_im'
 limit_maxD = True
 get_common_dataset = True
-common_dataset_name = 'freiburg_tr_te'
-example_num = 100
+common_dataset_name = 'kitti_2012'
+example_num = 1
 device = 'cuda'
 
 
@@ -27,12 +26,15 @@ def run(conf_file):
     preprocess = importlib.import_module('preprocess')
 
     # create helpful paths
-    experiment_directory = os.path.join(conf_file['PATHS']['saved_models'], 'vol2', cnn_name, 'experiment_' + str(experiment_n))
-    checkpoint_filepath = os.path.join(experiment_directory, 'checkpoint_' + str(checkpoint_n) + '.tar')
+    experiment_directory = os.path.join(
+        conf_file['PATHS']['saved_models'], 'vol2', cnn_name, 'experiment_' + str(experiment_n))
+    checkpoint_filepath = os.path.join(
+        experiment_directory, 'checkpoint_' + str(checkpoint_n) + '.tar')
 
     # load dataset
     if get_common_dataset:
-        merged_dataset = utils.load_common_dataset(common_dataset_name, conf_file['PATHS']['common_datasets'])
+        merged_dataset = utils.load_common_dataset(
+            common_dataset_name, conf_file['PATHS']['common_datasets'])
     else:
         merged_dataset = utils.load_specific_dataset(experiment_directory)
 
@@ -49,20 +51,23 @@ def run(conf_file):
     # restore training statistics
     stats = checkpoint['stats']
 
+    # timeit
+    start_time = timeit.default_timer()
+
     data_feeder = preprocess.dataset(merged_dataset, which, form, limit_maxD)
     imL, imR, dispL, maskL = data_feeder[example_num]
     imL = imL.unsqueeze(0).cuda()
     imR = imR.unsqueeze(0).cuda()
     max_limit = dispL.max()
     dispL = dispL.unsqueeze(0).cuda()
-    maskL = maskL.unsqueeze(0).cuda()
+    maskL = maskL.bool().unsqueeze(0).cuda()
 
     max_disp = 192
     h = imL.shape[2]
     w = imL.shape[3]
     initial_scale = [max_disp, h, w]
     scales = [[round(max_disp/4), round(h/4), round(w/4)],
-              [round(max_disp/6), round(h/6), round(w/6)],              
+              [round(max_disp/6), round(h/6), round(w/6)],
               [round(max_disp/8), round(h/8), round(w/8)],
               [round(max_disp/12), round(h/12), round(w/12)],
               [round(max_disp/16), round(h/16), round(w/16)],
@@ -76,10 +81,10 @@ def run(conf_file):
     # scales = [[round(max_disp/4), round(h/4), round(w/4)]]
     # prediction_from_scales = {0: ['after']}
 
-    tmp = timeit.default_timer()
     mae, err_pcg, imL_d, imR_d, volumes, volumes_dict, for_out_dict, predictions_dict = net.inspection(
         model_instance, initial_scale, scales, prediction_from_scales, device, imL, imR, dispL, maskL)
-    print("Inspection execution time: %s" % (timeit.default_timer()-tmp))
+    print("Inspection execution time: %s" %
+          (timeit.default_timer()-start_time))
 
     # visualize.imshow_3ch(imL.squeeze(0).cpu(), 'imL')
     # visualize.imshow_3ch(imR.squeeze(0).cpu(), 'imR')
