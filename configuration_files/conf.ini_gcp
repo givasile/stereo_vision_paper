@@ -1,0 +1,33 @@
+[PATHS]
+parent_dir: /home/ntipakos/stereo_vision/src/
+saved_models: /home/ntipakos/stereo_vision/saved_models/
+common_datasets: /home/ntipakos/stereo_vision/saved_models/common_datasets/
+
+[DATASETS]
+kitti_2015: /home/ntipakos/datasets/KITTI_2015/
+kitti_2012: /home/ntipakos/datasets/KITTI_2012/
+freiburg_driving: /home/ntipakos/datasets/Freiburg_Synthetic/
+freiburg_monkaa: /home/ntipakos/datasets/Freiburg_Synthetic/
+freiburg_flying: /home/ntipakos/datasets/Freiburg_Synthetic/
+Freiburg: /home/ntipakos/datasets/Freiburg_Synthetic/
+
+[DATASET_DICT]
+kitti_2012: /home/ntipakos/datasets/KITTI_2012/kitti_2012.p
+kitti_2015: /home/ntipakos/datasets/KITTI_2015/kitti_2015.p
+freiburg_flying: /home/ntipakos/datasets/Freiburg_Synthetic/freiburg_flying.p
+freiburg_driving: /home/ntipakos/datasets/Freiburg_Synthetic/freiburg_driving.p
+freiburg_monkaa: /home/ntipakos/datasets/Freiburg_Synthetic/freiburg_monkaa.p
+
+[CNN_NAME_MAPPING]
+one_res_small          : simple_net
+one_res_big            : simple_net_more
+mres_2d_small          : multires_2d_less
+mres_2d_big            : multires_2d
+mres_3d_small          : multires_3d_less
+mres_3d_big            : multires_3d
+mres_2d_3d_small       : multires_2d_3d_less
+mres_2d_3d_big         : multires_2d_3d
+scalable_net           : merging_info_net_custom_features
+scalable_net_free_2d   : merging_info_net_custom_features_free_2d_weights
+scalable_net_free_3d   : merging_info_net_custom_features_free_3d_weights
+scalable_net_free_2d_3d: merging_info_net_custom_features_free_2d_3d_weights
