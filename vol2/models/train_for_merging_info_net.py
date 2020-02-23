@@ -12,30 +12,30 @@ action = 'keep_training'
 assert action in ['from_scratch', 'keep_training', 'finetune']
 
 # directory to load_from
-experiment_n_load_from = 25  # directory to load_from
-experiment_n_save_to = 25  # directory to save_to
-chekpoint_n = 3  # which checkpoint to load weights/stats from
+experiment_n_load_from = 1  # directory to load_from
+experiment_n_save_to = 1  # directory to save_to
+chekpoint_n = 13  # which checkpoint to load weights/stats from
 get_common_dataset = False  # get_standart_dataset
 common_dataset_name = 'flying_tr_te'  # which standard dataset to load from
 
 # training parameters
-train_for_epochs = 1  # how many epochs to train
+train_for_epochs = 2  # how many epochs to train
 lr = 0.001  # learning rate
 
 # where to validate on
 train_on_crop = True  # training
 val_on_val_crop = False  # validate on val_crop
 val_on_val_full = False  # validate on val_full
-val_on_test_crop = False  # validate on test_crop
+val_on_test_crop = True  # validate on test_crop
 val_on_test_full = True  # validate on test_full
 
 device = 'cuda'  # on which device to train
 
 dataset_mixture = {'kitti_2012': [0, 0, 0],
-                 'kitti_2015': [0, 0, 0],
-                 'freiburg_monkaa': [1, 1, 0],
-                 'freiburg_driving': [1, 1, 0],
-                 'freiburg_flying': [2, 2, 2]}
+                   'kitti_2015': [0, 0, 0],
+                   'freiburg_monkaa': [1, 1, 0],
+                   'freiburg_driving': [1, 1, 0],
+                   'freiburg_flying': [2, 2, 2]}
 
 
 def run(conf_file):
@@ -45,8 +45,10 @@ def run(conf_file):
     utils = importlib.import_module('vol2.models.utils')
 
     # create directory to save stats, weights, dataset
-    experiment_directory = utils.create_directory_to_store_experiment(conf_file, cnn_name, experiment_n_save_to)
-    directory_to_load_from = os.path.join(conf['PATHS']['saved_models'], 'vol2', cnn_name, 'experiment_' + str(experiment_n_load_from))
+    experiment_directory = utils.create_directory_to_store_experiment(
+        conf_file, cnn_name, experiment_n_save_to)
+    directory_to_load_from = os.path.join(
+        conf['PATHS']['saved_models'], 'vol2', cnn_name, 'experiment_' + str(experiment_n_load_from))
 
     # create instance of model
     if device == 'cpu':
@@ -55,14 +57,17 @@ def run(conf_file):
         model_instance = net.model().cuda()
 
     # init instance of optimizer
-    optimizer = torch.optim.Adam(model_instance.parameters(), lr=lr, betas=(0.9, 0.999))
+    optimizer = torch.optim.Adam(
+        model_instance.parameters(), lr=lr, betas=(0.9, 0.999))
 
     # get dataset
     if action in ['from_scratch', 'finetune']:
         if get_common_dataset:
-            dataset = utils.load_common_dataset(common_dataset_name, conf_file['PATHS']['common_datasets'])
+            dataset = utils.load_common_dataset(
+                common_dataset_name, conf_file['PATHS']['common_datasets'])
         else:
-            dataset = merged.Dataset(dataset_mixture, create_load='create', state_dict=None)
+            dataset = merged.Dataset(
+                dataset_mixture, create_load='create', state_dict=None)
         # save dataset to directory
         utils.store_state_dict_of_dataset(dataset, experiment_directory)
     elif action == 'keep_training':
@@ -70,12 +75,13 @@ def run(conf_file):
 
     # get stats
     if action in ['from_scratch', 'finetune']:
-        stats = utils.initialize_stats_dict_for_merging_info_net(val_on_val_crop, val_on_val_full, val_on_test_crop, val_on_test_full)
+        stats = utils.initialize_stats_dict_for_merging_info_net(
+            val_on_val_crop, val_on_val_full, val_on_test_crop, val_on_test_full)
     elif action == 'keep_training':
-        checkpoint_filepath = os.path.join(directory_to_load_from, 'checkpoint_' + str(chekpoint_n) + '.tar')
+        checkpoint_filepath = os.path.join(
+            directory_to_load_from, 'checkpoint_' + str(chekpoint_n) + '.tar')
         checkpoint = torch.load(checkpoint_filepath)
         stats = checkpoint['stats']
-
 
     # get or init weights
     if action in ['from_scratch']:
@@ -84,17 +90,19 @@ def run(conf_file):
         model_instance.load_state_dict(checkpoint['state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer'])
     elif action == 'finetune':
-        checkpoint_filepath = os.path.join(directory_to_load_from, 'checkpoint_' + str(chekpoint_n) + '.tar')
+        checkpoint_filepath = os.path.join(
+            directory_to_load_from, 'checkpoint_' + str(chekpoint_n) + '.tar')
         checkpoint = torch.load(checkpoint_filepath)
         model_instance.load_state_dict(checkpoint['state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer'])
 
     # save checkpoint
     if action in ['from_scratch', 'finetune']:
-        net.save_checkpoint(model_instance, optimizer, stats, experiment_directory)
+        net.save_checkpoint(model_instance, optimizer,
+                            stats, experiment_directory)
 
-    print('Number of model parameters: {}'.format(sum([p.data.nelement() for p in model_instance.parameters()])))
-
+    print('Number of model parameters: {}'.format(
+        sum([p.data.nelement() for p in model_instance.parameters()])))
 
     # training for n epochs
     start_full_time = time.time()
@@ -123,7 +131,8 @@ def run(conf_file):
 
             net.training_epoch(dataset, 2, stats, model_instance, optimizer, initial_scale,
                                scales, prediction_from_scales, loss_from_scales_in_training, device)
-            net.save_checkpoint(model_instance, optimizer, stats, experiment_directory)
+            net.save_checkpoint(model_instance, optimizer,
+                                stats, experiment_directory)
             torch.cuda.empty_cache()
 
         # VAL_CROP
@@ -142,7 +151,8 @@ def run(conf_file):
                                       0: ['after']}
             net.validate('val', 'crop', dataset, 4, stats, model_instance, initial_scale,
                          scales, prediction_from_scales, device)
-            net.save_checkpoint(model_instance, optimizer, stats, experiment_directory)
+            net.save_checkpoint(model_instance, optimizer,
+                                stats, experiment_directory)
             torch.cuda.empty_cache()
 
         # VAL_FULL
@@ -161,7 +171,8 @@ def run(conf_file):
                                       0: ['after']}
             net.validate('val', 'full', dataset, 1, stats, model_instance, initial_scale,
                          scales, prediction_from_scales, device)
-            net.save_checkpoint(model_instance, optimizer, stats, experiment_directory)
+            net.save_checkpoint(model_instance, optimizer,
+                                stats, experiment_directory)
             torch.cuda.empty_cache()
 
         # TEST_CROP
@@ -179,9 +190,10 @@ def run(conf_file):
                                       1: ['after'],
                                       0: ['after']}
 
-            net.validate('test', 'crop', dataset, 4, stats, model_instance, initial_scale,
+            net.validate('test', 'crop', dataset, 8, stats, model_instance, initial_scale,
                          scales, prediction_from_scales, device)
-            net.save_checkpoint(model_instance, optimizer, stats, experiment_directory)
+            net.save_checkpoint(model_instance, optimizer,
+                                stats, experiment_directory)
             torch.cuda.empty_cache()
 
         # TEST_FULL
@@ -198,10 +210,10 @@ def run(conf_file):
                                       2: ['after'],
                                       1: ['after'],
                                       0: ['after']}
-            scales = [[round(max_disp/8), round(h/8), round(w/8)]]
-            net.validate('test', 'full', dataset, 1, stats, model_instance, initial_scale,
+            net.validate('test', 'full', dataset, 4, stats, model_instance, initial_scale,
                          scales, prediction_from_scales, device)
-            net.save_checkpoint(model_instance, optimizer, stats, experiment_directory)
+            net.save_checkpoint(model_instance, optimizer,
+                                stats, experiment_directory)
             torch.cuda.empty_cache()
 
         # update current epoch

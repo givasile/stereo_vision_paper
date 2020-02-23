@@ -24,7 +24,8 @@ ins = sys.path.insert(1, parent_path)
 ins if parent_path not in sys.path else 0
 
 # import custom modules
-submodules = importlib.import_module('vol2.models.' + cnn_name + '.submodules1')
+submodules = importlib.import_module(
+    'vol2.models.' + cnn_name + '.submodules1')
 evaluate = importlib.import_module('evaluate')
 preprocess = importlib.import_module('preprocess')
 
@@ -88,7 +89,8 @@ class model(torch.nn.Module):
         # first volume is by default the last volume
         volumes_dict[len(scales) - 1] = {}
         volumes_dict[len(scales) - 1]['before'] = volumes[-1]
-        volumes_dict[len(scales) - 1]['after'] = self.module_3d(0, volumes[-1], 3)
+        volumes_dict[len(scales) -
+                     1]['after'] = self.module_3d(0, volumes[-1], 3)
         for i in range(len(scales) - 2, -1, -1):
             if i >= min_sc:
                 volumes_dict[i] = {}
@@ -190,7 +192,7 @@ def training_epoch(merged, batch_size, stats, model_instance, optimizer, initial
             imL = imL.cuda()
             imR = imR.cuda()
             dispL = dispL.cuda()
-            maskL = maskL.cuda()
+            maskL = maskL.bool().cuda()
 
             mae, err_pcg, loss = training_step(model_instance, initial_scale, scales,
                                                prediction_from_scales, device, optimizer,
@@ -324,7 +326,7 @@ def validate(which, form, merged, batch_size, stats, model_instance, initial_sca
             imL = imL.cuda()
             imR = imR.cuda()
             dispL = dispL.cuda()
-            maskL = maskL.cuda()
+            maskL = maskL.bool().cuda()
 
             mae, pcg, _ = inference(model_instance, initial_scale, scales,
                                     prediction_from_scales,
