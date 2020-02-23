@@ -304,7 +304,21 @@ The learnable parts of MSNet ($f_2, f_4, f_5, f_6$) are four CNNs, that follow s
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Experimental Evaluation}
 
-The experimental evaluation is presented in three steps; (a) we compare MSNet with the State-of-the-art models (b) we compare MSNet to similar backbones CNN architectures but with important differences, creating an internal benchmark and (c) we experiment on how MSNet behaves under different set of processing scales. All experiments are based on the synthetic SceneFlow dataset \cite{MIFDB16}.
+The experimental evaluation is organized in four parts; In the first part (section 4.1), we compare the MSNet with the State-of-the-art methods, in terms of accuracy and efficiency. In the second part (sections 4.2, 4.3), we create an internal benchmartk for challenging some fundamental architectural choices we made on MSNet; we desing some alternative models that share common designing principles with the MSNet (i.e same backbone architecture), but diversify in the critical points we want to reason about. In the third part (section 4.4), we measure how MSNet
+behaves under different sets of processing scales. In the final part (section 4.5), we show through an example, that MSNet has learned to choose the appropriate processing scale for basing the final prediction, according to the properties of the neighborhood of each point. 
+
+All experiments are based on the synthetic SceneFlow dataset \cite{MIFDB16}, following the default training/test set split (35454 training vs 4370 testing images). SceneFlow consists of dense ground truth high-resolution disparity images (H=540, W=960). For the evaluation of the models we use (a) the End-Point-Error (EPE) metric, which stands for the mean absolute prediction error and (b) the percentage (PCG) metric which stands for the percentage of points with abosolute error over 3 pixels.
+
+All models have been trained from scratch, with random initialization following the fan-in scheme ($\theta \sim N(0,\sigma=\sqrt{\sfrac{2}{n}})$) as proposed in \cite{He2015}, in a GeForce GTX 1080 GPU. The training images were randomly cropped in (H=256, W=512) patches, were normalized with ImageNet preprocessing statistics (mean, std) and the Adam optimizer ($\beta_1 = 0.9, \beta_2=0.999$) with learning rate of 0.001 was used. The batch size was set to 2, for 15 training epochs. For the training phase of MSNet, the processing scales were preset to $T= \{2^2, 2^3, 2^4, 2^5\}$ and the final loss $L$ was a weighted sum of the EPE loss at each incremental absorbtion of a processing scale $L^{\{t_i, ..., t_j\}} $:
+
+
+\begin{gather}
+L = \dfrac{1}{2}L^{\{t_0, t_1, t_2, t_3\}} +  \dfrac{1}{6}L^{\{t_1, t_2, t_3\}} + \dfrac{1}{6}L^{\{t_2, t_3\}} + \dfrac{1}{6}L^{\{t_3\}}\\
+L^{\{t_i, ..., t_j\}} = |\hat{Y}^{\{t_i, ..., t_j\}} - Y |    
+\end{gather}{}
+
+
+
 
 \subsection{Comparison with State-Of-The-Art models}
 
@@ -339,12 +353,12 @@ In table \ref{tab:results}, we can compare the proposed MSNet model with the oth
     \hline
     \multicolumn{5}{c}{ \textbf{SOTA} } \\
     \hline
-    PSMNet\cite{Chang2018PyramidNetwork} & - & - & 1.09 & - \\
-    CRL\cite{Pang2018CascadeMatching} & - & - & 1.32 & - \\
-    DispNetC\cite{Mayer2016ALD} & - & - & 1.68 & - \\
+    PSMNet\cite{Chang2018PyramidNetwork} & - & 0.45 & 1.09 & - \\
+    CRL\cite{Pang2018CascadeMatching} & - & 0.47 & 1.32 & - \\
+    DispNetC\cite{Mayer2016ALD} & - & 0.06 & 1.68 & - \\
     GC-Net\cite{Kendall2017End-to-EndRegression} & 3.5 & 0.95 & 2.51 & 9.34 \\
     Edge-Stereo\cite{SongEdgeStereoResidual} & - & - & 1.12 & 4.99 \\
-    CSPN\cite{cheng2018learning} & - & - & 0.78 & - \\
+    CSPN\cite{cheng2018learning} & - & 0.5 & 0.78 & - \\
     GA-Net\cite{zhang2019ga} & 2.3 & 1.5 & 0.84 & - \\
     AMNet\cite{du2019amnet} & 4.37 & - & \textbf{0.74} & - \\
     
@@ -385,8 +399,6 @@ In table \ref{tab:results}, we can compare the proposed MSNet model with the oth
     \caption{Analytic illustration of a prediction process. The first row (left to right) contains the left image along all scales $X^{L,t} : t \in \{2^2, 2^3, 2^4, 2^5\}$. The second and third row contain the single scale predictions $\hat{Y}^{L,t}$ and the corresponding error images $E^{L,t}$. The fourth and fifth row contains the multiscale predictions (processing scales are added as we move from right to left) and the corresponding error images. We can observe the limitations of single-scale predictions; coarse scales fail in describing the details between objects while fine scales suffer from instabilities. On the other hand, the multiscale prediction combines the benefits of both worlds; it starts with a rough estimation of the disparity image and it adds higher-resolution details as it visits fine scales.}
     \label{fig:EMAPs}
 \end{figure}
-
-In this section we measure the performance of the proposed method on the large synthetic SceneFlow dataset. Table \ref{tab:results} presents the aggregated results of our experiments and figure \ref{fig:EMAPs} the results on a single training example.
 
 \subsection{The Effect Of Reinforcing Multi-Scale Processing}
 
