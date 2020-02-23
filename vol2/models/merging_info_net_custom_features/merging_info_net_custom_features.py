@@ -24,7 +24,8 @@ ins = sys.path.insert(1, parent_path)
 ins if parent_path not in sys.path else 0
 
 # import custom modules
-submodules = importlib.import_module('vol2.models.' + cnn_name + '.submodules1')
+submodules = importlib.import_module(
+    'vol2.models.' + cnn_name + '.submodules1')
 evaluate = importlib.import_module('evaluate')
 preprocess = importlib.import_module('preprocess')
 
@@ -190,7 +191,7 @@ def training_epoch(merged, batch_size, stats, model_instance, optimizer, initial
             imL = imL.cuda()
             imR = imR.cuda()
             dispL = dispL.cuda()
-            maskL = maskL.cuda()
+            maskL = maskL.bool().cuda()
 
             max_disp = 192
             h = imL.shape[2]
@@ -324,7 +325,7 @@ def validate(which, form, merged, batch_size, stats, model_instance, initial_sca
                 stats[which+'_'+form]['mae'][str(key)+'_'+key1] = []
             if str(key)+'_'+key1 not in stats[which+'_'+form]['pcg'].keys():
                 stats[which+'_'+form]['pcg'][str(key)+'_'+key1] = []
-                
+
             stats[which+'_'+form]['mae'][str(key)+'_'+key1].append([])
             stats[which+'_'+form]['pcg'][str(key)+'_'+key1].append([])
 
