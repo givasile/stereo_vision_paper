@@ -28,8 +28,8 @@ sys.path.insert(1, parent_path) if parent_path not in sys.path else 0
 
 ################# Configuration ####################
 cnn_name = 'merging_info_net_custom_features'
-save_fig = False
-high_low = 'high'
+save_fig = True
+high_low = 'low'
 
 # directory to load_from
 experiment_n = 1      # directory to load_from
@@ -115,7 +115,7 @@ for sc in [4, 8, 16, 32]:
 ### VISUALIZATION ###
 step = 1
 
-# example where law resolution matters
+# example where low resolution matters
 x_low = 300
 y_low = 440
 # x_low = 452
@@ -135,6 +135,8 @@ elif high_low == 'high':
     y = y_high
 
 gt = dispL[:, x, y].item()
+gt_low = dispL[:, x_low, y_low].item()
+gt_high = dispL[:, x_high, y_high].item()
 
 # multiscale 
 scales = [4, 8, 16, 32]
@@ -286,5 +288,27 @@ ax.add_patch(rect2)
 plt.axis('off')
 # plt.tight_layout()
 if save_fig:
-    plt.savefig('./latex/figures/multiscale_importance_image_patches.pdf', bbox_inches = 'tight')
+    plt.savefig('./latex/figures/multiscale_importance_image_patches_L.pdf', bbox_inches = 'tight')
+plt.show(block=True)
+
+# save image
+fig = plt.figure(figsize = (4,2))
+ax = fig.add_subplot(111)
+
+imR = np.array(merged_dataset.load(example_num, which).imR_rgb)[100:380, 300:800]
+ax.imshow(imR)
+rect1 = patches.Rectangle((round(y_low - 40 - 300 - gt_low),round(x_low - 40 - 100)),80,80,linewidth=2,edgecolor='orange', facecolor = 'none')
+rect2 = patches.Rectangle((round(y_high - 40 - 300 - gt_high),round(x_high - 40 - 100)),80,80,linewidth=2,edgecolor='yellow', facecolor = 'none')
+
+ax.add_patch(rect1)
+ax.add_patch(rect2)
+
+# legend_elements = [Patch(facecolor='none', edgecolor='r', label='low resolution'),
+#                    Patch(facecolor='none', edgecolor='c', label='high resolution')]
+
+# ax.legend(handles = legend_elements)
+plt.axis('off')
+# plt.tight_layout()
+if save_fig:
+    plt.savefig('./latex/figures/multiscale_importance_image_patches_R.pdf', bbox_inches = 'tight')
 plt.show(block=True)
