@@ -34,11 +34,11 @@ ax.axvspan(-0.5, 3.5, alpha=0.5, color='gray')
 ax.axvspan(3.5, 9.5, alpha=0.5, color='darkgrey')
 ax.axvspan(9.5, 13.5, alpha=0.5, color='silver')
 ax.axvspan(13.5, 14.5, alpha=0.5, color='lightgrey')
-ax.set_ylabel('Execution time')
+ax.set_ylabel('Execution time (sec)')
 
-ax.axhspan(0.10, 0.33, alpha=0.3, color='darkgreen', label="max scale = 4")
-ax.axhspan(0.015, 0.1, alpha=0.3, color='limegreen', label="max scale = 8")
-ax.axhspan(-0.01, 0.015, alpha=0.3, color='lime', label="max scale $>=$ 16")
+ax.axhspan(0.08, 0.33, alpha=0.3, color='darkgreen', label="max scale = 4")
+ax.axhspan(0.012, 0.08, alpha=0.3, color='limegreen', label="max scale = 8")
+ax.axhspan(-0.01, 0.012, alpha=0.3, color='lime', label="max scale $\geq$ 16")
 
 # set x labels
 ax.set_xticks(range(len(scales)))

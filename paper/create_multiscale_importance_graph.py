@@ -206,8 +206,13 @@ ax.set_xticklabels([str(0), str(20), str(40), str(60), str(80)], fontdict = font
 ax.set_xlim3d(0, 100)
 ax.xaxis.set_tick_params(pad = -5, labelsize = 8)
 
-ax.set_ylabel('scale', fontdict = font, labelpad = -15)
-ax.set_yticks([])
+ax.set_ylabel('scale', fontdict = font, labelpad = 2)
+ax.set_yticks([1,2,3,4])
+ax.set_yticklabels(['$\{2^2,...,2^5\}$',
+                    '$\{2^3,2^4,2^5\}$',
+                    '$\{2^4,2^5\}$',
+                    '$\{2^5\}$'], fontdict=font)
+ax.yaxis.set_tick_params(pad = -1, labelsize = 5, rotation=-10)
 
 ax.set_zlabel('probability', fontdict = font, labelpad = -25)
 ax.set_zticks([0.5, 1])
@@ -244,8 +249,10 @@ ax.set_xticklabels([str(0), str(20), str(40), str(60), str(80)], fontdict = font
 ax.set_xlim3d(0, 100)
 ax.xaxis.set_tick_params(pad = -5, labelsize = 8)
 
-ax.set_ylabel('scale', fontdict = font, labelpad = -15)
-ax.set_yticks([])
+ax.set_ylabel('scale', fontdict = font, labelpad = -8)
+ax.set_yticks([1,2,3,4])
+ax.set_yticklabels(['$2^2$','$2^3$','$2^4$','$2^5$'], fontdict=font)
+ax.yaxis.set_tick_params(pad = -3, labelsize = 7)
 
 ax.set_zlabel('probability', fontdict = font, labelpad = -25)
 ax.set_zticks([0.5, 1])
