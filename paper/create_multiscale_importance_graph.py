@@ -15,6 +15,8 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib.patches import Patch
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
+import matplotlib
+matplotlib.use("TkAgg")
 
 
 # import config file
@@ -29,7 +31,7 @@ sys.path.insert(1, parent_path) if parent_path not in sys.path else 0
 ################# Configuration ####################
 cnn_name = 'merging_info_net_custom_features'
 save_fig = True
-high_low = 'low'
+high_low = 'high'
 
 # directory to load_from
 experiment_n = 1      # directory to load_from
