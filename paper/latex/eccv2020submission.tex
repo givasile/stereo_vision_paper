@@ -15,29 +15,35 @@
 \usepackage{ruler}
 \usepackage{color}
 \usepackage[width=122mm,left=12mm,paperwidth=146mm,height=193mm,top=12mm,paperheight=217mm]{geometry}
+
+% INITIAL SUBMISSION - The following two lines are NOT commented
+% CAMERA READY - Comment OUT the following two lines
+% \usepackage{ruler}
+% \usepackage[width=122mm,left=12mm,paperwidth=146mm,height=193mm,top=12mm,paperheight=217mm]{geometry}
+
+
 \begin{document}
 % \renewcommand\thelinenumber{\color[rgb]{0.2,0.5,0.8}\normalfont\sffamily\scriptsize\arabic{linenumber}\color[rgb]{0,0,0}}
 % \renewcommand\makeLineNumber {\hss\thelinenumber\ \hspace{6mm} \rlap{\hskip\textwidth\ \hspace{6.5mm}\thelinenumber}}
 % \linenumbers
 \pagestyle{headings}
 \mainmatter
-\def\ECCV16SubNumber{***}  % Insert your submission number here
 
-\title{Reinforcing Multi-Scale Analysis For Depth Estimation} % Replace with your title
 
-\titlerunning{ECCV-16 submission ID \ECCV16SubNumber}
+\def\ECCVSubNumber{6636}
 
-\authorrunning{ECCV-16 submission ID \ECCV16SubNumber}
-
+\title{Reinforcing Multi-Scale Analysis For Depth Estimation}
+\titlerunning{ECCV-20 submission ID \ECCVSubNumber}
+\authorrunning{ECCV-20 submission ID \ECCVSubNumber}
 \author{Anonymous ECCV submission}
-\institute{Paper ID \ECCV16SubNumber}
+\institute{Paper ID \ECCVSubNumber}
 
 
 \maketitle
 
 \begin{abstract}
 Convolutional neural networks exhibit exceptional performance in predicting depth from stereo images. However, this performance comes with two essential drawbacks (a) they consume extraordinary computational power (clusters of GPUs) even for a single prediction and (b) their memory and computational demand are predefined from the training phase, hence they cannot be adjusted to the available resources on-demand.
-For confronting these problems, we propose a scalable CNN architecture (MSNet), adjustable to the specific requirements of each application; it can reduce its computational demands by sacrificing some precision or target for high accuracy if more resources are available. The bias towards accuracy or efficiency can be determined at test time, without any need for retraining. For achieving such scalability, we adopted the basic ideas of scale-space theory \cite{Lindeberg1994} and incorporated them into the MSNet architecture.
+For confronting these problems, we propose a scalable CNN architecture (MSNet), adjustable to the specific requirements of each application; it can reduce its computational demands by sacrificing some precision or target for high accuracy if more resources are available. The bias towards accuracy or efficiency can be determined at test time, without any need for retraining. For achieving such scalability, we adopted the basic ideas of scale-space theory and incorporated them into the MSNet architecture.
 MSNet exhibits challenging performance comparing to the state-of-the-art methods in the SceneFlow dataset, even though it uses considerably less learnable parameters. 
 
 \keywords{Depth Estimation, Stereo Vision, Deep Learning, Multi-Scale Processing}
